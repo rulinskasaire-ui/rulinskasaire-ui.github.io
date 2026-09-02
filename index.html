@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Planejamento Comercial por Cliente | Atlas Copco</title>
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <style>
   :root{
     --navy:#0A2540;
@@ -359,8 +360,8 @@
           <select id="fActCategory" required></select>
         </div>
         <div class="field">
-          <label for="fActResponsible">Responsável</label>
-          <input type="text" id="fActResponsible" placeholder="Ex.: Carlos Lima">
+          <label for="fActDepartment">Departamento</label>
+          <input type="text" id="fActDepartment" placeholder="Ex.: Power Train / FA / Cabin">
         </div>
       </div>
       <div class="newcat-row" id="newCatRow">
@@ -371,6 +372,17 @@
         <div class="field" style="margin-bottom:0;">
           <label for="fNewCatColor">Cor</label>
           <input type="color" id="fNewCatColor" value="#0067AC">
+        </div>
+      </div>
+      <div class="hint" style="margin:-8px 0 14px;">Esse texto aparece dentro da seta no gráfico. Se deixar em branco, a categoria é exibida no lugar.</div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fActResponsible">Responsável</label>
+          <input type="text" id="fActResponsible" placeholder="Ex.: Carlos Lima">
+        </div>
+        <div class="field">
+          <label for="fActRevenue">Receita prevista no ano (R$)</label>
+          <input type="number" id="fActRevenue" min="0" step="0.01" placeholder="0,00">
         </div>
       </div>
       <div class="field-row three">
@@ -391,11 +403,6 @@
             <option value="atrasado">Atrasado</option>
           </select>
         </div>
-      </div>
-      <div class="field">
-        <label for="fActRevenue">Receita prevista no ano (R$)</label>
-        <input type="number" id="fActRevenue" min="0" step="0.01" placeholder="0,00">
-        <div class="hint">Valor que essa ação deve gerar de receita ao longo do ano.</div>
       </div>
       <div class="field">
         <label for="fActNotes">Observações</label>
@@ -424,6 +431,7 @@
       <div></div>
       <div class="right">
         <button type="button" class="btn btn-outline" id="btnCloseView">Fechar</button>
+        <button type="button" class="btn btn-outline" id="btnGeneratePPT">Gerar PPT</button>
         <button type="button" class="btn btn-primary" id="btnDownloadView">Baixar imagem (PNG)</button>
       </div>
     </div>
@@ -434,17 +442,16 @@
 (function(){
   "use strict";
 
-  var STORAGE_KEY = "ac_planejamento_comercial_v2";
+  var STORAGE_KEY = "ac_planejamento_comercial_v3";
   var MONTHS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
   var MONTHS_FULL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   var QUARTERS = ["Q1","Q2","Q3","Q4"];
   var STATUS_LABELS = {"planejado":"Planejado","em-andamento":"Em andamento","concluido":"Concluído","atrasado":"Atrasado"};
   var DEFAULT_CATEGORIES = [
-    {id:"cat-visita", name:"Visita comercial", color:"#0067AC"},
-    {id:"cat-treinamento", name:"Treinamento", color:"#4FA3D1"},
-    {id:"cat-demo", name:"Demonstração técnica", color:"#0A2540"},
-    {id:"cat-manutencao", name:"Manutenção / Suporte", color:"#6B6E70"},
-    {id:"cat-proposta", name:"Proposta / Follow-up", color:"#B8952F"}
+    {id:"cat-newtech", name:"New Technology", color:"#0067AC"},
+    {id:"cat-transformation", name:"Transformation", color:"#4FA3D1"},
+    {id:"cat-empower", name:"Empower", color:"#B8952F"},
+    {id:"cat-protection", name:"Protection", color:"#6B6E70"}
   ];
 
   function uid(prefix){ return (prefix||"id") + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8); }
@@ -468,16 +475,22 @@
           return parsed;
         }
       }
-      // try to migrate from previous version key
-      var oldRaw = localStorage.getItem("ac_planejamento_comercial_v1");
-      if(oldRaw){
-        var oldParsed = JSON.parse(oldRaw);
-        if(oldParsed && Array.isArray(oldParsed.clients)){
-          if(!Array.isArray(oldParsed.categories) || oldParsed.categories.length===0){ oldParsed.categories = DEFAULT_CATEGORIES.slice(); }
-          oldParsed.clients.forEach(function(c){
-            (c.activities||[]).forEach(function(a){ if(typeof a.revenue !== "number") a.revenue = 0; });
-          });
-          return oldParsed;
+      // try to migrate from previous version keys
+      var oldKeys = ["ac_planejamento_comercial_v2", "ac_planejamento_comercial_v1"];
+      for(var k=0;k<oldKeys.length;k++){
+        var oldRaw = localStorage.getItem(oldKeys[k]);
+        if(oldRaw){
+          var oldParsed = JSON.parse(oldRaw);
+          if(oldParsed && Array.isArray(oldParsed.clients)){
+            if(!Array.isArray(oldParsed.categories) || oldParsed.categories.length===0){ oldParsed.categories = DEFAULT_CATEGORIES.slice(); }
+            oldParsed.clients.forEach(function(c){
+              (c.activities||[]).forEach(function(a){
+                if(typeof a.revenue !== "number") a.revenue = 0;
+                if(typeof a.department !== "string") a.department = "";
+              });
+            });
+            return oldParsed;
+          }
         }
       }
     }catch(e){ console.warn("Falha ao ler dados salvos, iniciando vazio.", e); }
@@ -574,7 +587,8 @@
         var widthPct = (span/4*100);
         html += '<div class="track">';
         var barClickable = printMode ? '' : ' onclick="ACPlan.openActivity(\''+client.id+'\',\''+a.id+'\')"';
-        html += '<div class="bar status-'+a.status+'" style="left:calc('+leftPct+'% + 6px);width:calc('+widthPct+'% - 12px);background:'+lighten(cat.color,0.62)+';border-color:'+cat.color+';"'+barClickable+' title="'+escapeAttr(cat.name+" · "+STATUS_LABELS[a.status])+'">'+escapeHtml(cat.name)+'</div>';
+        var barLabel = a.department ? a.department : cat.name;
+        html += '<div class="bar status-'+a.status+'" style="left:calc('+leftPct+'% + 6px);width:calc('+widthPct+'% - 12px);background:'+lighten(cat.color,0.62)+';border-color:'+cat.color+';"'+barClickable+' title="'+escapeAttr(cat.name+" · "+STATUS_LABELS[a.status])+'">'+escapeHtml(barLabel)+'</div>';
         html += '</div>';
         html += '</div>';
       });
@@ -603,17 +617,18 @@
     var acts = activitiesForYear(client, year).slice().sort(function(a,b){ return a.startMonth - b.startMonth; });
     var total = totalRevenue(client, year);
     var html = '<div class="table-wrap"><table><thead><tr>' +
-      '<th>Atividade</th><th>Categoria</th><th>Responsável</th><th>Período</th><th>Status</th><th>Receita prevista</th><th>Observações</th>' +
+      '<th>Atividade</th><th>Categoria</th><th>Departamento</th><th>Responsável</th><th>Período</th><th>Status</th><th>Receita prevista</th><th>Observações</th>' +
       (printMode ? '' : '<th></th>') +
       '</tr></thead><tbody>';
     if(acts.length===0){
-      html += '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:18px;">Nenhuma atividade cadastrada para este ano.</td></tr>';
+      html += '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:18px;">Nenhuma atividade cadastrada para este ano.</td></tr>';
     } else {
       acts.forEach(function(a){
         var cat = getCategory(a.categoryId);
         html += '<tr>';
         html += '<td>'+escapeHtml(a.title)+'</td>';
         html += '<td><span class="cat-chip"><span class="dot" style="background:'+cat.color+';"></span>'+escapeHtml(cat.name)+'</span></td>';
+        html += '<td>'+escapeHtml(a.department||"—")+'</td>';
         html += '<td>'+escapeHtml(a.responsible||"—")+'</td>';
         html += '<td>'+periodLabel(a)+'</td>';
         html += '<td><span class="status-pill '+a.status+'">'+STATUS_LABELS[a.status]+'</span></td>';
@@ -629,7 +644,7 @@
       });
     }
     html += '</tbody>';
-    html += '<tfoot><tr><td colspan="5">Total de receita prevista em '+year+'</td><td class="num-cell">'+formatCurrencyBRL(total)+'</td><td colspan="'+(printMode?1:2)+'"></td></tr></tfoot>';
+    html += '<tfoot><tr><td colspan="6">Total de receita prevista em '+year+'</td><td class="num-cell">'+formatCurrencyBRL(total)+'</td><td colspan="'+(printMode?1:2)+'"></td></tr></tfoot>';
     html += '</table></div>';
     return html;
   }
@@ -819,6 +834,7 @@
       titleEl.textContent = "Editar atividade";
       document.getElementById("fActTitle").value = a.title;
       document.getElementById("fActCategory").value = a.categoryId;
+      document.getElementById("fActDepartment").value = a.department||"";
       document.getElementById("fActResponsible").value = a.responsible||"";
       document.getElementById("fActStart").value = a.startMonth;
       document.getElementById("fActEnd").value = a.endMonth;
@@ -846,6 +862,7 @@
 
     var title = document.getElementById("fActTitle").value.trim();
     var categoryId = document.getElementById("fActCategory").value;
+    var department = document.getElementById("fActDepartment").value.trim();
     var responsible = document.getElementById("fActResponsible").value.trim();
     var startMonth = clampMonth(parseInt(document.getElementById("fActStart").value,10));
     var endMonth = clampMonth(parseInt(document.getElementById("fActEnd").value,10));
@@ -870,11 +887,11 @@
     if(editingActivity.activityId){
       var a = null;
       for(var i=0;i<client.activities.length;i++){ if(client.activities[i].id===editingActivity.activityId){ a=client.activities[i]; break; } }
-      a.title=title; a.categoryId=categoryId; a.responsible=responsible;
+      a.title=title; a.categoryId=categoryId; a.department=department; a.responsible=responsible;
       a.startMonth=startMonth; a.endMonth=endMonth; a.status=status; a.revenue=revenue; a.notes=notes;
     } else {
       client.activities.push({
-        id: uid("act"), year: selectedYear, title: title, categoryId: categoryId,
+        id: uid("act"), year: selectedYear, title: title, categoryId: categoryId, department: department,
         responsible: responsible, startMonth: startMonth, endMonth: endMonth,
         status: status, revenue: revenue, notes: notes
       });
@@ -936,7 +953,10 @@
         if(!confirm("Importar estes dados vai substituir o planejamento atual salvo neste navegador. Deseja continuar?")) return;
         state = parsed;
         if(!Array.isArray(state.categories) || state.categories.length===0){ state.categories = DEFAULT_CATEGORIES.slice(); }
-        state.clients.forEach(function(c){ (c.activities||[]).forEach(function(a){ if(typeof a.revenue !== "number") a.revenue = 0; }); });
+        state.clients.forEach(function(c){ (c.activities||[]).forEach(function(a){
+          if(typeof a.revenue !== "number") a.revenue = 0;
+          if(typeof a.department !== "string") a.department = "";
+        }); });
         selectedClientId = state.clients.length ? state.clients[0].id : null;
         renderAll();
       }catch(err){ alert("Não foi possível importar o arquivo. Verifique se é um JSON exportado por este sistema."); }
@@ -1119,10 +1139,11 @@
         var barH = rowH - 26;
         drawChevronBar(ctx, barX, barY, barW, barH, lighten(cat.color,0.6), cat.color);
 
+        var barLabel = a.department ? a.department : cat.name;
         ctx.fillStyle = "#0A2540";
         ctx.font = "italic 700 13px Arial, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(fitText(ctx, cat.name, barW-16), barX+barW/2, barY+barH/2+5);
+        ctx.fillText(fitText(ctx, barLabel, barW-16), barX+barW/2, barY+barH/2+5);
         ctx.textAlign = "left";
 
         // revenue value
@@ -1157,9 +1178,12 @@
     return canvas;
   }
 
+  var lastViewedClientId = null;
+
   function openViewImage(clientId){
     var client = getClient(clientId);
     if(!client) return;
+    lastViewedClientId = clientId;
     var body = document.getElementById("viewImageBody");
     body.innerHTML = '<div class="view-loading">Gerando imagem...</div>';
     viewImageOverlay.classList.add("open");
@@ -1187,6 +1211,104 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
   });
 
+  // ---------------- Gerar PPT (arquivo editável) ----------------
+  function generatePPTX(client, year){
+    if(typeof PptxGenJS === "undefined"){
+      alert("Não foi possível carregar o gerador de PowerPoint. Verifique sua conexão com a internet e tente novamente.");
+      return;
+    }
+    var acts = activitiesForYear(client, year).slice().sort(function(a,b){ return a.startMonth - b.startMonth; });
+
+    var pres = new PptxGenJS();
+    pres.defineLayout({ name:"WIDE", width:13.33, height:7.5 });
+    pres.setLayout("WIDE");
+    var slide = pres.addSlide();
+    slide.background = { color: "FFFFFF" };
+
+    slide.addText(client.name, { x:0.4, y:0.25, w:9.5, h:0.6, fontSize:28, bold:true, color:"0A2540", fontFace:"Arial" });
+    var subtitle = client.plant + (client.owner ? "   ·   Especialista: " + client.owner : "");
+    slide.addText(subtitle, { x:0.4, y:0.8, w:9.5, h:0.35, fontSize:13, color:"6B6E70", fontFace:"Arial" });
+
+    // brandmark
+    slide.addShape("rect", { x:10.9, y:0.3, w:2.0, h:0.4, fill:{ color:"0067AC" }, line:{ type:"none" } });
+    slide.addText("ATLAS COPCO", { x:10.9, y:0.3, w:2.0, h:0.4, fontSize:12, bold:true, color:"FFFFFF", align:"center", valign:"middle", fontFace:"Arial" });
+
+    // rule
+    slide.addShape("line", { x:0.4, y:1.25, w:12.53, h:0, line:{ color:"0067AC", width:2.25 } });
+
+    slide.addText("Roadmap comercial " + year, { x:0.4, y:1.35, w:12.53, h:0.4, fontSize:16, bold:true, color:"0A2540", align:"center", fontFace:"Arial" });
+
+    var marginX = 0.4;
+    var labelW = 3.0;
+    var revenueW = 1.9;
+    var gap = 0.25;
+    var totalW = 13.33 - marginX*2;
+    var mainW = totalW - revenueW - gap;
+    var qW = (mainW - labelW) / 4;
+    var headerH = 0.5;
+    var rows = Math.max(acts.length, 1);
+    var rowH = Math.min(0.6, (7.5 - 2.2 - 0.6) / (rows + 1));
+    var tableTop = 1.95;
+
+    slide.addShape("rect", { x:marginX, y:tableTop, w:mainW, h:headerH, fill:{ color:"0067AC" }, line:{ type:"none" } });
+    slide.addShape("rect", { x:marginX+mainW+gap, y:tableTop, w:revenueW, h:headerH, fill:{ color:"0067AC" }, line:{ type:"none" } });
+    slide.addText("ATIVIDADES", { x:marginX+0.12, y:tableTop, w:labelW-0.2, h:headerH, fontSize:11, bold:true, color:"FFFFFF", valign:"middle", fontFace:"Arial" });
+    QUARTERS.forEach(function(q,i){
+      slide.addText(q, { x:marginX+labelW+i*qW, y:tableTop, w:qW, h:headerH, fontSize:11, bold:true, color:"FFFFFF", align:"center", valign:"middle", fontFace:"Arial" });
+    });
+    slide.addText("RECEITA PREVISTA / " + year, { x:marginX+mainW+gap, y:tableTop, w:revenueW, h:headerH, fontSize:9, bold:true, color:"FFFFFF", align:"center", valign:"middle", fontFace:"Arial" });
+
+    if(acts.length===0){
+      var rowY0 = tableTop+headerH;
+      slide.addShape("rect", { x:marginX, y:rowY0, w:mainW, h:rowH, fill:{ color:"EDEDED" }, line:{ color:"C9C9C9", width:0.5 } });
+      slide.addText("Nenhuma atividade programada para " + year, { x:marginX, y:rowY0, w:mainW, h:rowH, fontSize:11, italic:true, color:"6B6E70", align:"center", valign:"middle", fontFace:"Arial" });
+    } else {
+      acts.forEach(function(a, idx){
+        var rowY = tableTop + headerH + idx*rowH;
+        var cat = getCategory(a.categoryId);
+        var zebra = (idx%2===0) ? "EDEDED" : "FFFFFF";
+        slide.addShape("rect", { x:marginX, y:rowY, w:mainW, h:rowH, fill:{ color:zebra }, line:{ color:"C9C9C9", width:0.5 } });
+        [1,3].forEach(function(qi){
+          slide.addShape("rect", { x:marginX+labelW+qi*qW, y:rowY, w:qW, h:rowH, fill:{ color:"C7D6E0", transparency:70 }, line:{ type:"none" } });
+        });
+        slide.addText(a.title, { x:marginX+0.12, y:rowY, w:labelW-0.2, h:rowH, fontSize:10, color:"1C2B36", valign:"middle", fontFace:"Arial" });
+
+        var startQ = monthToQuarter(a.startMonth);
+        var endQ = monthToQuarter(a.endMonth);
+        var barX = marginX+labelW+(startQ-1)*qW + 0.06;
+        var barW = (endQ-startQ+1)*qW - 0.12;
+        var barY = rowY + rowH*0.15;
+        var barH = rowH*0.7;
+        var fillHex = lighten(cat.color, 0.6).replace(/rgb\(|\)|\s/g,"").split(",").map(function(n){ return ("0"+parseInt(n,10).toString(16)).slice(-2); }).join("");
+        slide.addShape("homePlate", { x:barX, y:barY, w:barW, h:barH, fill:{ color: fillHex }, line:{ color: cat.color.replace("#",""), width:1 } });
+        var barLabel = a.department ? a.department : cat.name;
+        slide.addText(barLabel, { x:barX, y:barY, w:barW, h:barH, fontSize:9, bold:true, italic:true, color:"0A2540", align:"center", valign:"middle", fontFace:"Arial" });
+
+        slide.addText(formatCompactBRL(a.revenue||0), { x:marginX+mainW+gap, y:rowY, w:revenueW, h:rowH, fontSize:10, color:"1C2B36", align:"center", valign:"middle", fontFace:"Arial" });
+      });
+    }
+
+    // legend
+    var legendY = tableTop + headerH + rows*rowH + 0.3;
+    if(legendY < 7.1 && state.categories.length){
+      var lx = marginX;
+      state.categories.forEach(function(cat){
+        slide.addShape("rect", { x:lx, y:legendY, w:0.18, h:0.18, fill:{ color: cat.color.replace("#","") }, line:{ type:"none" } });
+        slide.addText(cat.name, { x:lx+0.24, y:legendY-0.06, w:2.0, h:0.3, fontSize:9, color:"6B6E70", fontFace:"Arial" });
+        lx += 0.24 + (cat.name.length*0.075) + 0.3;
+      });
+    }
+
+    pres.writeFile({ fileName: "roadmap-" + slugify(client.name) + "-" + year + ".pptx" });
+  }
+
+  document.getElementById("btnGeneratePPT").addEventListener("click", function(){
+    if(!lastViewedClientId){ return; }
+    var client = getClient(lastViewedClientId);
+    if(!client) return;
+    generatePPTX(client, selectedYear);
+  });
+
   // expose functions used by inline HTML handlers
   window.ACPlan = {
     openClient: openClientModal,
@@ -1209,11 +1331,11 @@
       owner: "Especialista responsável",
       notes: "Este é um cliente de exemplo. Edite ou exclua para começar seu planejamento real.",
       activities: [
-        {id:uid("act"), year:y, title:"Visita de relacionamento", categoryId:"cat-visita", responsible:"Vendedor", startMonth:1, endMonth:1, status:"planejado", revenue:0, notes:""},
-        {id:uid("act"), year:y, title:"Treinamento de operadores", categoryId:"cat-treinamento", responsible:"Especialista de produto", startMonth:3, endMonth:4, status:"planejado", revenue:80000, notes:""},
-        {id:uid("act"), year:y, title:"Demonstração de novo equipamento", categoryId:"cat-demo", responsible:"Especialista de produto", startMonth:5, endMonth:6, status:"planejado", revenue:300000, notes:""},
-        {id:uid("act"), year:y, title:"Manutenção preventiva programada", categoryId:"cat-manutencao", responsible:"Suporte técnico", startMonth:8, endMonth:9, status:"planejado", revenue:100000, notes:""},
-        {id:uid("act"), year:y, title:"Envio de proposta comercial", categoryId:"cat-proposta", responsible:"Vendedor", startMonth:10, endMonth:11, status:"planejado", revenue:400000, notes:""}
+        {id:uid("act"), year:y, title:"IPB-P", categoryId:"cat-newtech", department:"Power Train / FA / Cabin", responsible:"Especialista de produto", startMonth:4, endMonth:6, status:"planejado", revenue:800000, notes:""},
+        {id:uid("act"), year:y, title:"TN8", categoryId:"cat-transformation", department:"Power Train / FA / Cabin", responsible:"Vendedor", startMonth:5, endMonth:7, status:"planejado", revenue:300000, notes:""},
+        {id:uid("act"), year:y, title:"XCB", categoryId:"cat-empower", department:"Power Train / FA", responsible:"Especialista de produto", startMonth:3, endMonth:5, status:"planejado", revenue:75000, notes:""},
+        {id:uid("act"), year:y, title:"Automation (Powerhead / Screwfeeding)", categoryId:"cat-protection", department:"Power Train / FA", responsible:"Suporte técnico", startMonth:1, endMonth:3, status:"planejado", revenue:150000, notes:""},
+        {id:uid("act"), year:y, title:"Envio de proposta comercial", categoryId:"cat-newtech", department:"Power Train / FA / Body Shop", responsible:"Vendedor", startMonth:10, endMonth:11, status:"planejado", revenue:400000, notes:""}
       ]
     };
     state.clients.push(seed);
