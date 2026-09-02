@@ -1217,11 +1217,11 @@
       alert("Não foi possível carregar o gerador de PowerPoint. Verifique sua conexão com a internet e tente novamente.");
       return;
     }
+    try{
     var acts = activitiesForYear(client, year).slice().sort(function(a,b){ return a.startMonth - b.startMonth; });
 
     var pres = new PptxGenJS();
-    pres.defineLayout({ name:"WIDE", width:13.33, height:7.5 });
-    pres.setLayout("WIDE");
+    pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 in
     var slide = pres.addSlide();
     slide.background = { color: "FFFFFF" };
 
@@ -1299,14 +1299,30 @@
       });
     }
 
-    pres.writeFile({ fileName: "roadmap-" + slugify(client.name) + "-" + year + ".pptx" });
+    pres.writeFile({ fileName: "roadmap-" + slugify(client.name) + "-" + year + ".pptx" })
+      .catch(function(err){
+        console.error("Erro ao salvar o PPTX:", err);
+        alert("Não foi possível gerar o arquivo PowerPoint. Detalhe técnico: " + (err && err.message ? err.message : err));
+      });
+    }catch(err){
+      console.error("Erro ao montar o PPTX:", err);
+      alert("Não foi possível gerar o arquivo PowerPoint. Detalhe técnico: " + (err && err.message ? err.message : err));
+    }
   }
 
   document.getElementById("btnGeneratePPT").addEventListener("click", function(){
     if(!lastViewedClientId){ return; }
     var client = getClient(lastViewedClientId);
     if(!client) return;
-    generatePPTX(client, selectedYear);
+    var btn = document.getElementById("btnGeneratePPT");
+    var originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Gerando...";
+    try{
+      generatePPTX(client, selectedYear);
+    } finally {
+      setTimeout(function(){ btn.disabled = false; btn.textContent = originalLabel; }, 600);
+    }
   });
 
   // expose functions used by inline HTML handlers
