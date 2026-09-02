@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planejamento Comercial por Cliente | Atlas Copco</title>
+<style>
+  :root{
+    --navy:#0A2540;
+    --navy-soft:#123457;
+    --blue:#0067AC;
+    --blue-dark:#004D82;
+    --blue-tint:#E6F0F7;
+    --beige:#EDE6D6;
+    --beige-dark:#C9A227;
+    --gray:#6B6E70;
+    --gray-light:#F2F1EE;
+    --gray-border:#DAD9D5;
+    --white:#FFFFFF;
+    --ink:#1C2B36;
+    --danger:#B23A2F;
+    --radius:3px;
+    --font: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font);
+    background:var(--gray-light);
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.45;
+  }
+  h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-0.01em;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;font-size:14px;}
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    background:var(--navy);
+    color:var(--white);
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:0 20px;
+    height:64px;
+    position:sticky;
+    top:0;
+    z-index:40;
+  }
+  .brandmark{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brandmark .box{
+    background:var(--blue);
+    color:var(--white);
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:0.02em;
+    padding:6px 10px;
+    border-radius:2px;
+    line-height:1;
+  }
+  .brandmark .bars{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+  }
+  .brandmark .bars span{
+    display:block;
+    width:22px;
+    height:3px;
+    background:var(--white);
+  }
+  .app-title{
+    font-size:15px;
+    font-weight:600;
+    color:#CFE0EE;
+    border-left:1px solid rgba(255,255,255,0.25);
+    padding-left:18px;
+  }
+  .app-title small{
+    display:block;
+    font-weight:400;
+    font-size:11.5px;
+    color:#93AEC3;
+    margin-top:2px;
+  }
+  .topbar-spacer{flex:1;}
+  .year-switch{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,0.08);
+    border-radius:20px;
+    padding:4px 6px;
+  }
+  .year-switch button{
+    background:transparent;
+    border:none;
+    color:var(--white);
+    width:26px;height:26px;
+    border-radius:50%;
+    font-size:16px;
+  }
+  .year-switch button:hover{background:rgba(255,255,255,0.18);}
+  .year-switch .yr{
+    min-width:48px;
+    text-align:center;
+    font-weight:700;
+    font-size:14px;
+  }
+  .topbar-actions{display:flex;gap:8px;}
+  .btn{
+    border:1px solid transparent;
+    border-radius:var(--radius);
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .btn-primary{background:var(--blue);color:var(--white);}
+  .btn-primary:hover{background:var(--blue-dark);}
+  .btn-ghost-dark{background:transparent;color:var(--white);border-color:rgba(255,255,255,0.35);}
+  .btn-ghost-dark:hover{background:rgba(255,255,255,0.1);}
+  .btn-outline{background:var(--white);color:var(--navy);border-color:var(--gray-border);}
+  .btn-outline:hover{border-color:var(--blue);color:var(--blue);}
+  .btn-text{background:transparent;color:var(--blue);border:none;padding:4px 6px;}
+  .btn-text:hover{text-decoration:underline;}
+  .btn-danger-text{background:transparent;color:var(--danger);border:none;padding:4px 6px;}
+  .btn-danger-text:hover{text-decoration:underline;}
+  .btn-sm{padding:5px 10px;font-size:12.5px;}
+
+  /* ---------- Layout ---------- */
+  .app-shell{
+    display:flex;
+    align-items:flex-start;
+    min-height:calc(100vh - 64px);
+  }
+  .sidebar{
+    width:290px;
+    flex:0 0 290px;
+    background:var(--white);
+    border-right:1px solid var(--gray-border);
+    min-height:calc(100vh - 64px);
+    padding:16px;
+  }
+  .sidebar-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .sidebar-head h2{font-size:13px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray);}
+  .search-box{margin-bottom:12px;}
+  .search-box input{
+    width:100%;
+    padding:8px 10px;
+    border:1px solid var(--gray-border);
+    border-radius:var(--radius);
+    background:var(--gray-light);
+  }
+  .search-box input:focus{outline:2px solid var(--blue);outline-offset:1px;}
+
+  .client-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .client-card{
+    border:1px solid var(--gray-border);
+    border-left:4px solid transparent;
+    border-radius:var(--radius);
+    padding:10px 12px;
+    background:var(--white);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .client-card:hover{border-color:var(--blue);cursor:pointer;}
+  .client-card.active{
+    border-left-color:var(--blue);
+    background:var(--blue-tint);
+    border-color:var(--blue-tint);
+  }
+  .client-card .cname{font-weight:700;font-size:13.5px;color:var(--navy);}
+  .client-card .cplant{font-size:12px;color:var(--gray);margin-top:2px;}
+  .client-card .badge{
+    background:var(--beige);
+    color:#7A6212;
+    font-size:11px;
+    font-weight:700;
+    border-radius:10px;
+    padding:2px 8px;
+    flex:0 0 auto;
+  }
+  .empty-clients{
+    color:var(--gray);
+    font-size:12.5px;
+    padding:16px 4px;
+    text-align:center;
+    border:1px dashed var(--gray-border);
+    border-radius:var(--radius);
+  }
+
+  .sidebar-footer{
+    margin-top:18px;
+    padding-top:14px;
+    border-top:1px solid var(--gray-border);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .sidebar-footer .btn{justify-content:center;}
+  #importInput{display:none;}
+
+  .main{
+    flex:1;
+    padding:24px 28px 60px;
+    min-width:0;
+  }
+
+  /* ---------- Empty state ---------- */
+  .empty-state{
+    background:var(--white);
+    border:1px dashed var(--gray-border);
+    border-radius:6px;
+    padding:60px 30px;
+    text-align:center;
+    color:var(--gray);
+  }
+  .empty-state h3{color:var(--navy);font-size:18px;margin-bottom:8px;}
+  .empty-state p{max-width:420px;margin:0 auto 18px;font-size:13.5px;}
+
+  /* ---------- Client detail ---------- */
+  .client-header{
+    background:var(--white);
+    border:1px solid var(--gray-border);
+    border-top:4px solid var(--blue);
+    border-radius:6px;
+    padding:20px 24px;
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    margin-bottom:20px;
+  }
+  .client-header h1{font-size:21px;color:var(--navy);}
+  .client-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    margin-top:10px;
+  }
+  .client-meta div{font-size:12.5px;color:var(--gray);}
+  .client-meta strong{
+    display:block;
+    color:var(--ink);
+    font-size:13.5px;
+    font-weight:600;
+    margin-top:1px;
+  }
+  .client-header-actions{
+    display:flex;
+    gap:8px;
+    flex:0 0 auto;
+    align-self:flex-start;
+  }
+
+  .section-title-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:26px 0 12px;
+  }
+  .section-title-row h2{font-size:15px;color:var(--navy);}
+  .section-title-row .sub{font-size:12px;color:var(--gray);font-weight:400;margin-top:2px;}
+
+  /* ---------- Legend ---------- */
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-bottom:14px;
+    font-size:12px;
+    color:var(--gray);
+  }
+  .legend .item{display:flex;align-items:center;gap:6px;}
+  .legend .dot{width:11px;height:11px;border-radius:2px;flex:0 0 auto;}
+
+  /* ---------- Gantt ---------- */
+  .gantt-wrap{
+    background:var(--white);
+    border:1px solid var(--gray-border);
+    border-radius:6px;
+    overflow-x:auto;
+    margin-bottom:26px;
+  }
+  .gantt-grid{
+    min-width:900px;
+  }
+  .gantt-row{
+    display:grid;
+    grid-template-columns:230px repeat(12, minmax(48px,1fr));
+    align-items:stretch;
+    border-bottom:1px solid var(--gray-border);
+  }
+  .gantt-row.head{
+    background:var(--navy);
+    color:var(--white);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    position:sticky;
+    top:0;
+  }
+  .gantt-row.head .rowlabel{background:var(--navy);}
+  .gantt-row .rowlabel{
+    padding:10px 14px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    background:var(--white);
+    border-right:1px solid var(--gray-border);
+    min-width:0;
+  }
+  .gantt-row .rowlabel .t{
+    font-weight:700;
+    font-size:12.5px;
+    color:var(--navy);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .gantt-row .rowlabel .r{
+    font-size:11px;
+    color:var(--gray);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .gantt-row.head .rowlabel .t{color:var(--white);font-size:11px;}
+  .month-cell{
+    padding:10px 4px;
+    text-align:center;
+    border-right:1px solid rgba(0,0,0,0.05);
+    position:relative;
+  }
+  .gantt-row.head .month-cell{border-right:1px solid rgba(255,255,255,0.12);}
+  .month-cell.current{background:rgba(0,103,172,0.07);}
+  .gantt-row.head .month-cell.current{background:rgba(255,255,255,0.12);}
+  .track{
+    grid-column: 2 / span 12;
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    position:relative;
+    min-height:44px;
+  }
+  .track .colline{border-right:1px solid rgba(0,0,0,0.05);}
+  .bar{
+    position:absolute;
+    top:8px;
+    height:28px;
+    border-radius:4px;
+    display:flex;
+    align-items:center;
+    padding:0 10px;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--white);
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    box-shadow:0 1px 2px rgba(0,0,0,0.15);
+    cursor:pointer;
+  }
+  .bar.status-atrasado{outline:2px solid var(--danger);outline-offset:-2px;}
+  .bar.status-planejado{opacity:0.72;background-image:repeating-linear-gradient(135deg, rgba(255,255,255,0.18) 0 6px, transparent 6px 12px);}
+  .bar.status-concluido::after{
+    content:"✓";
+    margin-left:6px;
+    font-weight:800;
+  }
+  .no-activities-row{
+    padding:20px;
+    text-align:center;
+    color:var(--gray);
+    font-size:13px;
+  }
+
+  /* ---------- Activity table ---------- */
+  .table-wrap{
+    background:var(--white);
+    border:1px solid var(--gray-border);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  table{width:100%;border-collapse:collapse;font-size:12.8px;}
+  thead th{
+    background:var(--gray-light);
+    color:var(--gray);
+    text-transform:uppercase;
+    font-size:10.5px;
+    letter-spacing:0.05em;
+    text-align:left;
+    padding:10px 14px;
+    border-bottom:1px solid var(--gray-border);
+  }
+  tbody td{
+    padding:10px 14px;
+    border-bottom:1px solid var(--gray-border);
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--gray-light);}
+  .cat-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:11.5px;
+    font-weight:600;
+  }
+  .cat-chip .dot{width:9px;height:9px;border-radius:2px;}
+  .status-pill{
+    display:inline-block;
+    padding:2px 9px;
+    border-radius:10px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .status-pill.planejado{background:#E9EEF2;color:#4A5A66;}
+  .status-pill.em-andamento{background:var(--blue-tint);color:var(--blue-dark);}
+  .status-pill.concluido{background:#E4EFE4;color:#2F6B32;}
+  .status-pill.atrasado{background:#F6E2DF;color:var(--danger);}
+  .row-actions{display:flex;gap:10px;white-space:nowrap;}
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(10,37,64,0.45);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:40px 16px;
+    z-index:100;
+    overflow-y:auto;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--white);
+    width:100%;
+    max-width:520px;
+    border-radius:6px;
+    border-top:4px solid var(--blue);
+    padding:24px 26px 22px;
+  }
+  .modal h3{font-size:16px;color:var(--navy);margin-bottom:4px;}
+  .modal .modal-sub{font-size:12px;color:var(--gray);margin-bottom:18px;}
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-size:11.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color:var(--gray);
+    margin-bottom:5px;
+  }
+  .field input[type=text],
+  .field input[type=color],
+  .field select,
+  .field textarea{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--gray-border);
+    border-radius:var(--radius);
+    background:var(--white);
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--blue);outline-offset:0;border-color:var(--blue);}
+  .field textarea{resize:vertical;min-height:60px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-row.three{grid-template-columns:1fr 1fr 1fr;}
+  .newcat-row{display:none;grid-template-columns:1fr 90px;gap:10px;margin-top:8px;}
+  .newcat-row.show{display:grid;}
+  .modal-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:20px;
+    padding-top:16px;
+    border-top:1px solid var(--gray-border);
+  }
+  .modal-actions .right{display:flex;gap:8px;}
+  .hint{font-size:11px;color:var(--gray);margin-top:4px;}
+
+  /* ---------- Print-only container ---------- */
+  #printAllContainer{display:none;}
+
+  footer.credit{
+    text-align:center;
+    font-size:11px;
+    color:var(--gray);
+    padding:30px 0 10px;
+  }
+
+  @media (max-width: 900px){
+    .app-shell{flex-direction:column;}
+    .sidebar{width:100%;flex:none;border-right:none;border-bottom:1px solid var(--gray-border);}
+    .field-row,.field-row.three{grid-template-columns:1fr;}
+  }
+
+  /* ================= PRINT ================= */
+  @media print{
+    @page{ size:landscape; margin:12mm; }
+    body{background:#fff;}
+    .topbar, .sidebar, .no-print, .overlay{display:none !important;}
+    .app-shell{display:block;}
+    .main{padding:0;}
+    .gantt-wrap{overflow:visible;border:1px solid #999;}
+    .gantt-grid{min-width:0;}
+    .client-header{border:1px solid #999;box-shadow:none;}
+    .table-wrap{border:1px solid #999;}
+    .client-detail{page-break-after:always;}
+    .client-detail:last-child{page-break-after:auto;}
+    footer.credit{display:none;}
+    body.printing-all .app-shell{display:none;}
+    body.printing-all #printAllContainer{display:block;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brandmark">
+    <div class="box">ATLAS COPCO</div>
+    <div class="bars"><span></span><span></span></div>
+  </div>
+  <div class="app-title">Planejamento Comercial por Cliente
+    <small>Especialistas de Produto &amp; Vendas</small>
+  </div>
+  <div class="topbar-spacer"></div>
+  <div class="year-switch no-print">
+    <button id="yearPrev" title="Ano anterior">‹</button>
+    <span class="yr" id="yearLabel">2026</span>
+    <button id="yearNext" title="Próximo ano">›</button>
+  </div>
+  <div class="topbar-actions no-print">
+    <button class="btn btn-ghost-dark btn-sm" id="btnExport">Exportar dados</button>
+    <button class="btn btn-ghost-dark btn-sm" id="btnImport">Importar dados</button>
+    <input type="file" id="importInput" accept="application/json">
+    <button class="btn btn-primary btn-sm" id="btnPrintCurrent">Imprimir cliente</button>
+  </div>
+</div>
+
+<div class="app-shell">
+
+  <aside class="sidebar no-print">
+    <div class="sidebar-head">
+      <h2>Clientes</h2>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchClients" placeholder="Buscar cliente ou planta...">
+    </div>
+    <ul class="client-list" id="clientList"></ul>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-primary" id="btnNewClient">+ Novo cliente</button>
+      <button class="btn btn-outline" id="btnPrintAll">Imprimir todos os clientes</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="emptyState" class="empty-state" style="display:none;">
+      <h3>Nenhum cliente selecionado</h3>
+      <p>Cadastre um cliente e sua planta para começar a programar as atividades comerciais e técnicas do ano.</p>
+      <button class="btn btn-primary" id="btnNewClientEmpty">+ Cadastrar primeiro cliente</button>
+    </div>
+
+    <div id="clientDetailWrap"></div>
+  </main>
+</div>
+
+<footer class="credit no-print">Uso interno &middot; Atlas Copco &middot; Planejamento Comercial por Cliente</footer>
+
+<!-- printable version of all clients, populated on demand -->
+<div id="printAllContainer"></div>
+
+<!-- ===================== MODAL: CLIENTE ===================== -->
+<div class="overlay" id="clientModalOverlay">
+  <div class="modal">
+    <h3 id="clientModalTitle">Novo cliente</h3>
+    <div class="modal-sub">Dados cadastrais do cliente e da planta/unidade.</div>
+    <form id="clientForm">
+      <div class="field">
+        <label for="fClientName">Nome do cliente *</label>
+        <input type="text" id="fClientName" required placeholder="Ex.: Vale S.A.">
+      </div>
+      <div class="field">
+        <label for="fClientPlant">Planta / Unidade *</label>
+        <input type="text" id="fClientPlant" required placeholder="Ex.: Complexo Itabira - MG">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fClientContact">Contato responsável</label>
+          <input type="text" id="fClientContact" placeholder="Ex.: João Silva - Manutenção">
+        </div>
+        <div class="field">
+          <label for="fClientSegment">Segmento</label>
+          <input type="text" id="fClientSegment" placeholder="Ex.: Mineração">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fClientOwner">Especialista / Vendedor responsável</label>
+        <input type="text" id="fClientOwner" placeholder="Ex.: Maria Souza">
+      </div>
+      <div class="field">
+        <label for="fClientNotes">Observações</label>
+        <textarea id="fClientNotes" placeholder="Contexto, potencial, contrato vigente..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-danger-text" id="btnDeleteClient" style="display:none;">Excluir cliente</button>
+        <div class="right">
+          <button type="button" class="btn btn-outline" id="btnCancelClient">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar cliente</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== MODAL: ATIVIDADE ===================== -->
+<div class="overlay" id="activityModalOverlay">
+  <div class="modal">
+    <h3 id="activityModalTitle">Nova atividade</h3>
+    <div class="modal-sub">Defina o período (mês de início e fim) dentro do ano selecionado.</div>
+    <form id="activityForm">
+      <div class="field">
+        <label for="fActTitle">Título da atividade *</label>
+        <input type="text" id="fActTitle" required placeholder="Ex.: Treinamento de operação - compressores">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fActCategory">Categoria *</label>
+          <select id="fActCategory" required></select>
+        </div>
+        <div class="field">
+          <label for="fActResponsible">Responsável</label>
+          <input type="text" id="fActResponsible" placeholder="Ex.: Carlos Lima">
+        </div>
+      </div>
+      <div class="newcat-row" id="newCatRow">
+        <div class="field" style="margin-bottom:0;">
+          <label for="fNewCatName">Nome da nova categoria</label>
+          <input type="text" id="fNewCatName" placeholder="Ex.: Auditoria técnica">
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="fNewCatColor">Cor</label>
+          <input type="color" id="fNewCatColor" value="#0067AC">
+        </div>
+      </div>
+      <div class="field-row three">
+        <div class="field">
+          <label for="fActStart">Mês início *</label>
+          <select id="fActStart" required></select>
+        </div>
+        <div class="field">
+          <label for="fActEnd">Mês fim *</label>
+          <select id="fActEnd" required></select>
+        </div>
+        <div class="field">
+          <label for="fActStatus">Status</label>
+          <select id="fActStatus">
+            <option value="planejado">Planejado</option>
+            <option value="em-andamento">Em andamento</option>
+            <option value="concluido">Concluído</option>
+            <option value="atrasado">Atrasado</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="fActNotes">Observações</label>
+        <textarea id="fActNotes" placeholder="Detalhes, escopo, produto envolvido..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-danger-text" id="btnDeleteActivity" style="display:none;">Excluir atividade</button>
+        <div class="right">
+          <button type="button" class="btn btn-outline" id="btnCancelActivity">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar atividade</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "ac_planejamento_comercial_v1";
+  var MONTHS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  var MONTHS_FULL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  var STATUS_LABELS = {"planejado":"Planejado","em-andamento":"Em andamento","concluido":"Concluído","atrasado":"Atrasado"};
+  var DEFAULT_CATEGORIES = [
+    {id:"cat-visita", name:"Visita comercial", color:"#0067AC"},
+    {id:"cat-treinamento", name:"Treinamento", color:"#4FA3D1"},
+    {id:"cat-demo", name:"Demonstração técnica", color:"#0A2540"},
+    {id:"cat-manutencao", name:"Manutenção / Suporte", color:"#6B6E70"},
+    {id:"cat-proposta", name:"Proposta / Follow-up", color:"#B8952F"}
+  ];
+
+  function uid(prefix){
+    return (prefix||"id") + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
+  }
+
+  // ---------------- state ----------------
+  var state = loadState();
+  var selectedClientId = state.clients.length ? state.clients[0].id : null;
+  var selectedYear = new Date().getFullYear();
+  var editingClientId = null;
+  var editingActivity = null; // {clientId, activityId} or null
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && Array.isArray(parsed.clients)){
+          if(!Array.isArray(parsed.categories) || parsed.categories.length===0){
+            parsed.categories = DEFAULT_CATEGORIES.slice();
+          }
+          return parsed;
+        }
+      }
+    }catch(e){ console.warn("Falha ao ler dados salvos, iniciando vazio.", e); }
+    return { clients: [], categories: DEFAULT_CATEGORIES.slice() };
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){
+      alert("Não foi possível salvar os dados neste navegador (armazenamento local indisponível ou cheio).");
+    }
+  }
+
+  function getClient(id){
+    for(var i=0;i<state.clients.length;i++){ if(state.clients[i].id===id) return state.clients[i]; }
+    return null;
+  }
+  function getCategory(id){
+    for(var i=0;i<state.categories.length;i++){ if(state.categories[i].id===id) return state.categories[i]; }
+    return state.categories[0];
+  }
+  function activitiesForYear(client, year){
+    return (client.activities||[]).filter(function(a){ return a.year === year; });
+  }
+
+  // ---------------- DOM refs ----------------
+  var elClientList = document.getElementById("clientList");
+  var elClientDetailWrap = document.getElementById("clientDetailWrap");
+  var elEmptyState = document.getElementById("emptyState");
+  var elYearLabel = document.getElementById("yearLabel");
+  var elSearch = document.getElementById("searchClients");
+  var printAllContainer = document.getElementById("printAllContainer");
+
+  // ---------------- render: sidebar ----------------
+  function renderClientList(){
+    var filter = (elSearch.value||"").trim().toLowerCase();
+    elClientList.innerHTML = "";
+    var list = state.clients.filter(function(c){
+      if(!filter) return true;
+      return (c.name+" "+c.plant).toLowerCase().indexOf(filter) !== -1;
+    });
+    if(list.length===0){
+      var empty = document.createElement("li");
+      empty.className = "empty-clients";
+      empty.textContent = state.clients.length===0 ? "Nenhum cliente cadastrado ainda." : "Nenhum cliente encontrado.";
+      elClientList.appendChild(empty);
+      return;
+    }
+    list.forEach(function(c){
+      var li = document.createElement("li");
+      li.className = "client-card" + (c.id===selectedClientId ? " active":"");
+      var count = activitiesForYear(c, selectedYear).length;
+      li.innerHTML =
+        '<div><div class="cname"></div><div class="cplant"></div></div>' +
+        '<div class="badge"></div>';
+      li.querySelector(".cname").textContent = c.name;
+      li.querySelector(".cplant").textContent = c.plant;
+      li.querySelector(".badge").textContent = count;
+      li.addEventListener("click", function(){
+        selectedClientId = c.id;
+        renderAll();
+      });
+      elClientList.appendChild(li);
+    });
+  }
+
+  // ---------------- render: gantt ----------------
+  function buildGanttHTML(client, year, printMode){
+    var acts = activitiesForYear(client, year).slice().sort(function(a,b){
+      return a.startMonth - b.startMonth || a.endMonth - b.endMonth;
+    });
+    var todayMonth = (new Date().getFullYear()===year) ? (new Date().getMonth()+1) : -1;
+
+    var html = '<div class="gantt-wrap"><div class="gantt-grid">';
+    html += '<div class="gantt-row head"><div class="rowlabel"><div class="t">Atividade</div></div>';
+    MONTHS.forEach(function(m,i){
+      html += '<div class="month-cell'+(i+1===todayMonth?' current':'')+'">'+m+'</div>';
+    });
+    html += '</div>';
+
+    if(acts.length===0){
+      html += '<div class="no-activities-row">Nenhuma atividade programada para '+year+'.</div>';
+    } else {
+      acts.forEach(function(a){
+        var cat = getCategory(a.categoryId);
+        html += '<div class="gantt-row" data-activity="'+a.id+'">';
+        html += '<div class="rowlabel"><div class="t">'+escapeHtml(a.title)+'</div><div class="r">'+escapeHtml(a.responsible||"—")+'</div></div>';
+        for(var i=1;i<=12;i++){
+          html += '<div class="month-cell'+(i===todayMonth?' current':'')+'"></div>';
+        }
+        var span = (a.endMonth - a.startMonth) + 1;
+        var leftPct = ((a.startMonth-1)/12*100);
+        var widthPct = (span/12*100);
+        html += '<div class="track">';
+        var barClickable = printMode ? '' : ' onclick="ACPlan.openActivity(\''+client.id+'\',\''+a.id+'\')"';
+        html += '<div class="bar status-'+a.status+'" style="left:'+leftPct+'%;width:calc('+widthPct+'% - 6px);background:'+cat.color+';"'+barClickable+' title="'+escapeAttr(cat.name+" · "+STATUS_LABELS[a.status])+'">'+escapeHtml(a.title)+'</div>';
+        html += '</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  function buildLegendHTML(){
+    var html = '<div class="legend">';
+    state.categories.forEach(function(c){
+      html += '<div class="item"><span class="dot" style="background:'+c.color+';"></span>'+escapeHtml(c.name)+'</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function buildActivityTableHTML(client, year, printMode){
+    var acts = activitiesForYear(client, year).slice().sort(function(a,b){
+      return a.startMonth - b.startMonth;
+    });
+    var html = '<div class="table-wrap"><table><thead><tr>' +
+      '<th>Atividade</th><th>Categoria</th><th>Responsável</th><th>Período</th><th>Status</th><th>Observações</th>' +
+      (printMode ? '' : '<th></th>') +
+      '</tr></thead><tbody>';
+    if(acts.length===0){
+      html += '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:18px;">Nenhuma atividade cadastrada para este ano.</td></tr>';
+    } else {
+      acts.forEach(function(a){
+        var cat = getCategory(a.categoryId);
+        var period = a.startMonth===a.endMonth ? MONTHS[a.startMonth-1] : (MONTHS[a.startMonth-1]+" – "+MONTHS[a.endMonth-1]);
+        html += '<tr>';
+        html += '<td>'+escapeHtml(a.title)+'</td>';
+        html += '<td><span class="cat-chip"><span class="dot" style="background:'+cat.color+';"></span>'+escapeHtml(cat.name)+'</span></td>';
+        html += '<td>'+escapeHtml(a.responsible||"—")+'</td>';
+        html += '<td>'+period+'</td>';
+        html += '<td><span class="status-pill '+a.status+'">'+STATUS_LABELS[a.status]+'</span></td>';
+        html += '<td>'+escapeHtml(a.notes||"—")+'</td>';
+        if(!printMode){
+          html += '<td class="row-actions">' +
+            '<button class="btn-text" onclick="ACPlan.openActivity(\''+client.id+'\',\''+a.id+'\')">Editar</button>' +
+            '<button class="btn-danger-text" onclick="ACPlan.deleteActivity(\''+client.id+'\',\''+a.id+'\')">Excluir</button>' +
+            '</td>';
+        }
+        html += '</tr>';
+      });
+    }
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function buildClientDetailHTML(client, year, printMode){
+    var html = '<div class="client-detail">';
+    html += '<div class="client-header">';
+    html += '<div><h1>'+escapeHtml(client.name)+'</h1>';
+    html += '<div class="client-meta">';
+    html += '<div>Planta / Unidade<strong>'+escapeHtml(client.plant)+'</strong></div>';
+    html += '<div>Contato<strong>'+escapeHtml(client.contact||"—")+'</strong></div>';
+    html += '<div>Segmento<strong>'+escapeHtml(client.segment||"—")+'</strong></div>';
+    html += '<div>Especialista / Vendedor<strong>'+escapeHtml(client.owner||"—")+'</strong></div>';
+    html += '<div>Ano do planejamento<strong>'+year+'</strong></div>';
+    html += '</div></div>';
+    if(!printMode){
+      html += '<div class="client-header-actions no-print">' +
+        '<button class="btn btn-outline btn-sm" onclick="ACPlan.openClient(\''+client.id+'\')">Editar cliente</button>' +
+        '</div>';
+    }
+    html += '</div>';
+
+    html += '<div class="section-title-row"><div><h2>Cronograma '+year+'</h2><div class="sub">Atividades programadas por mês para esta planta.</div></div>';
+    if(!printMode){
+      html += '<button class="btn btn-primary no-print" onclick="ACPlan.openActivity(\''+client.id+'\')">+ Nova atividade</button>';
+    }
+    html += '</div>';
+
+    html += buildLegendHTML();
+    html += buildGanttHTML(client, year, printMode);
+    html += buildActivityTableHTML(client, year, printMode);
+
+    if(client.notes){
+      html += '<div class="section-title-row"><h2>Observações do cliente</h2></div>';
+      html += '<div class="table-wrap" style="padding:14px 18px;font-size:13px;color:var(--ink);">'+escapeHtml(client.notes)+'</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  function renderClientDetail(){
+    var client = selectedClientId ? getClient(selectedClientId) : null;
+    if(!client){
+      elEmptyState.style.display = "block";
+      elClientDetailWrap.innerHTML = "";
+      return;
+    }
+    elEmptyState.style.display = "none";
+    elClientDetailWrap.innerHTML = buildClientDetailHTML(client, selectedYear, false);
+  }
+
+  function renderAll(){
+    elYearLabel.textContent = selectedYear;
+    renderClientList();
+    renderClientDetail();
+    saveState();
+  }
+
+  // ---------------- helpers ----------------
+  function escapeHtml(str){
+    if(str===undefined || str===null) return "";
+    return String(str)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
+  function populateMonthSelects(){
+    ["fActStart","fActEnd"].forEach(function(id){
+      var sel = document.getElementById(id);
+      sel.innerHTML = "";
+      MONTHS_FULL.forEach(function(m,i){
+        var opt = document.createElement("option");
+        opt.value = i+1;
+        opt.textContent = m;
+        sel.appendChild(opt);
+      });
+    });
+  }
+  function populateCategorySelect(){
+    var sel = document.getElementById("fActCategory");
+    sel.innerHTML = "";
+    state.categories.forEach(function(c){
+      var opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+    var newOpt = document.createElement("option");
+    newOpt.value = "__new__";
+    newOpt.textContent = "+ Nova categoria...";
+    sel.appendChild(newOpt);
+  }
+
+  // ---------------- Client modal ----------------
+  var clientOverlay = document.getElementById("clientModalOverlay");
+  var clientForm = document.getElementById("clientForm");
+
+  function openClientModal(clientId){
+    editingClientId = clientId || null;
+    var titleEl = document.getElementById("clientModalTitle");
+    var delBtn = document.getElementById("btnDeleteClient");
+    if(clientId){
+      var c = getClient(clientId);
+      titleEl.textContent = "Editar cliente";
+      document.getElementById("fClientName").value = c.name;
+      document.getElementById("fClientPlant").value = c.plant;
+      document.getElementById("fClientContact").value = c.contact||"";
+      document.getElementById("fClientSegment").value = c.segment||"";
+      document.getElementById("fClientOwner").value = c.owner||"";
+      document.getElementById("fClientNotes").value = c.notes||"";
+      delBtn.style.display = "inline-block";
+    } else {
+      titleEl.textContent = "Novo cliente";
+      clientForm.reset();
+      delBtn.style.display = "none";
+    }
+    clientOverlay.classList.add("open");
+    document.getElementById("fClientName").focus();
+  }
+  function closeClientModal(){ clientOverlay.classList.remove("open"); editingClientId = null; }
+
+  clientForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = document.getElementById("fClientName").value.trim();
+    var plant = document.getElementById("fClientPlant").value.trim();
+    if(!name || !plant) return;
+    if(editingClientId){
+      var c = getClient(editingClientId);
+      c.name = name; c.plant = plant;
+      c.contact = document.getElementById("fClientContact").value.trim();
+      c.segment = document.getElementById("fClientSegment").value.trim();
+      c.owner = document.getElementById("fClientOwner").value.trim();
+      c.notes = document.getElementById("fClientNotes").value.trim();
+    } else {
+      var newClient = {
+        id: uid("client"),
+        name: name,
+        plant: plant,
+        contact: document.getElementById("fClientContact").value.trim(),
+        segment: document.getElementById("fClientSegment").value.trim(),
+        owner: document.getElementById("fClientOwner").value.trim(),
+        notes: document.getElementById("fClientNotes").value.trim(),
+        activities: []
+      };
+      state.clients.push(newClient);
+      selectedClientId = newClient.id;
+    }
+    closeClientModal();
+    renderAll();
+  });
+  document.getElementById("btnCancelClient").addEventListener("click", closeClientModal);
+  document.getElementById("btnDeleteClient").addEventListener("click", function(){
+    if(!editingClientId) return;
+    var c = getClient(editingClientId);
+    if(!confirm('Excluir o cliente "'+c.name+'" e todas as suas atividades? Esta ação não pode ser desfeita.')) return;
+    state.clients = state.clients.filter(function(x){ return x.id!==editingClientId; });
+    if(selectedClientId===editingClientId){
+      selectedClientId = state.clients.length ? state.clients[0].id : null;
+    }
+    closeClientModal();
+    renderAll();
+  });
+
+  // ---------------- Activity modal ----------------
+  var activityOverlay = document.getElementById("activityModalOverlay");
+  var activityForm = document.getElementById("activityForm");
+  var catSelect = document.getElementById("fActCategory");
+  var newCatRow = document.getElementById("newCatRow");
+
+  catSelect.addEventListener("change", function(){
+    newCatRow.classList.toggle("show", catSelect.value === "__new__");
+  });
+
+  function openActivityModal(clientId, activityId){
+    populateMonthSelects();
+    populateCategorySelect();
+    newCatRow.classList.remove("show");
+    var titleEl = document.getElementById("activityModalTitle");
+    var delBtn = document.getElementById("btnDeleteActivity");
+    editingActivity = { clientId: clientId, activityId: activityId || null };
+
+    if(activityId){
+      var client = getClient(clientId);
+      var a = null;
+      for(var i=0;i<client.activities.length;i++){ if(client.activities[i].id===activityId){ a=client.activities[i]; break; } }
+      titleEl.textContent = "Editar atividade";
+      document.getElementById("fActTitle").value = a.title;
+      document.getElementById("fActCategory").value = a.categoryId;
+      document.getElementById("fActResponsible").value = a.responsible||"";
+      document.getElementById("fActStart").value = a.startMonth;
+      document.getElementById("fActEnd").value = a.endMonth;
+      document.getElementById("fActStatus").value = a.status;
+      document.getElementById("fActNotes").value = a.notes||"";
+      delBtn.style.display = "inline-block";
+    } else {
+      titleEl.textContent = "Nova atividade";
+      activityForm.reset();
+      populateMonthSelects();
+      populateCategorySelect();
+      document.getElementById("fActStatus").value = "planejado";
+      delBtn.style.display = "none";
+    }
+    activityOverlay.classList.add("open");
+    document.getElementById("fActTitle").focus();
+  }
+  function closeActivityModal(){ activityOverlay.classList.remove("open"); editingActivity = null; }
+
+  activityForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var client = getClient(editingActivity.clientId);
+    if(!client) return;
+
+    var title = document.getElementById("fActTitle").value.trim();
+    var categoryId = document.getElementById("fActCategory").value;
+    var responsible = document.getElementById("fActResponsible").value.trim();
+    var startMonth = parseInt(document.getElementById("fActStart").value,10);
+    var endMonth = parseInt(document.getElementById("fActEnd").value,10);
+    var status = document.getElementById("fActStatus").value;
+    var notes = document.getElementById("fActNotes").value.trim();
+
+    if(endMonth < startMonth){ var tmp=startMonth; startMonth=endMonth; endMonth=tmp; }
+
+    if(categoryId === "__new__"){
+      var newName = document.getElementById("fNewCatName").value.trim();
+      var newColor = document.getElementById("fNewCatColor").value;
+      if(!newName){ alert("Informe o nome da nova categoria."); return; }
+      var newCat = { id: uid("cat"), name:newName, color:newColor };
+      state.categories.push(newCat);
+      categoryId = newCat.id;
+    }
+
+    if(!title){ return; }
+
+    if(editingActivity.activityId){
+      var a = null;
+      for(var i=0;i<client.activities.length;i++){ if(client.activities[i].id===editingActivity.activityId){ a=client.activities[i]; break; } }
+      a.title=title; a.categoryId=categoryId; a.responsible=responsible;
+      a.startMonth=startMonth; a.endMonth=endMonth; a.status=status; a.notes=notes;
+    } else {
+      client.activities.push({
+        id: uid("act"),
+        year: selectedYear,
+        title: title,
+        categoryId: categoryId,
+        responsible: responsible,
+        startMonth: startMonth,
+        endMonth: endMonth,
+        status: status,
+        notes: notes
+      });
+    }
+    closeActivityModal();
+    renderAll();
+  });
+  document.getElementById("btnCancelActivity").addEventListener("click", closeActivityModal);
+  document.getElementById("btnDeleteActivity").addEventListener("click", function(){
+    if(!editingActivity || !editingActivity.activityId) return;
+    var client = getClient(editingActivity.clientId);
+    if(!confirm("Excluir esta atividade?")) return;
+    client.activities = client.activities.filter(function(a){ return a.id!==editingActivity.activityId; });
+    closeActivityModal();
+    renderAll();
+  });
+
+  // close overlays by clicking backdrop
+  [clientOverlay, activityOverlay].forEach(function(ov){
+    ov.addEventListener("click", function(e){
+      if(e.target === ov){
+        ov===clientOverlay ? closeClientModal() : closeActivityModal();
+      }
+    });
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key==="Escape"){ closeClientModal(); closeActivityModal(); }
+  });
+
+  // ---------------- Toolbar actions ----------------
+  document.getElementById("yearPrev").addEventListener("click", function(){ selectedYear--; renderAll(); });
+  document.getElementById("yearNext").addEventListener("click", function(){ selectedYear++; renderAll(); });
+  document.getElementById("btnNewClient").addEventListener("click", function(){ openClientModal(null); });
+  document.getElementById("btnNewClientEmpty").addEventListener("click", function(){ openClientModal(null); });
+  elSearch.addEventListener("input", renderClientList);
+
+  document.getElementById("btnExport").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "planejamento-comercial-atlas-copco-"+(new Date().toISOString().slice(0,10))+".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById("btnImport").addEventListener("click", function(){
+    document.getElementById("importInput").click();
+  });
+  document.getElementById("importInput").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        if(!parsed || !Array.isArray(parsed.clients)) throw new Error("formato inválido");
+        if(!confirm("Importar estes dados vai substituir o planejamento atual salvo neste navegador. Deseja continuar?")) return;
+        state = parsed;
+        if(!Array.isArray(state.categories) || state.categories.length===0){ state.categories = DEFAULT_CATEGORIES.slice(); }
+        selectedClientId = state.clients.length ? state.clients[0].id : null;
+        renderAll();
+      }catch(err){
+        alert("Não foi possível importar o arquivo. Verifique se é um JSON exportado por este sistema.");
+      }
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("btnPrintCurrent").addEventListener("click", function(){
+    if(!selectedClientId){ alert("Selecione um cliente para imprimir."); return; }
+    window.print();
+  });
+
+  document.getElementById("btnPrintAll").addEventListener("click", function(){
+    if(state.clients.length===0){ alert("Nenhum cliente cadastrado."); return; }
+    var html = "";
+    state.clients.forEach(function(c){
+      html += buildClientDetailHTML(c, selectedYear, true);
+    });
+    printAllContainer.innerHTML = html;
+    document.body.classList.add("printing-all");
+    window.print();
+  });
+  window.addEventListener("afterprint", function(){
+    document.body.classList.remove("printing-all");
+    printAllContainer.innerHTML = "";
+  });
+
+  // expose functions used by inline HTML handlers
+  window.ACPlan = {
+    openClient: openClientModal,
+    openActivity: openActivityModal,
+    deleteActivity: function(clientId, activityId){
+      var client = getClient(clientId);
+      if(!confirm("Excluir esta atividade?")) return;
+      client.activities = client.activities.filter(function(a){ return a.id!==activityId; });
+      renderAll();
+    }
+  };
+
+  // ---------------- seed example on first run ----------------
+  if(state.clients.length===0){
+    var y = selectedYear;
+    var seed = {
+      id: uid("client"),
+      name: "Cliente Exemplo Ltda.",
+      plant: "Planta Industrial - Exemplo/SP",
+      contact: "Nome do contato",
+      segment: "Segmento do cliente",
+      owner: "Especialista responsável",
+      notes: "Este é um cliente de exemplo. Edite ou exclua para começar seu planejamento real.",
+      activities: [
+        {id:uid("act"), year:y, title:"Visita de relacionamento", categoryId:"cat-visita", responsible:"Vendedor", startMonth:1, endMonth:1, status:"planejado", notes:""},
+        {id:uid("act"), year:y, title:"Treinamento de operadores", categoryId:"cat-treinamento", responsible:"Especialista de produto", startMonth:3, endMonth:4, status:"planejado", notes:""},
+        {id:uid("act"), year:y, title:"Demonstração de novo equipamento", categoryId:"cat-demo", responsible:"Especialista de produto", startMonth:6, endMonth:6, status:"planejado", notes:""},
+        {id:uid("act"), year:y, title:"Manutenção preventiva programada", categoryId:"cat-manutencao", responsible:"Suporte técnico", startMonth:8, endMonth:9, status:"planejado", notes:""},
+        {id:uid("act"), year:y, title:"Envio de proposta comercial", categoryId:"cat-proposta", responsible:"Vendedor", startMonth:11, endMonth:11, status:"planejado", notes:""}
+      ]
+    };
+    state.clients.push(seed);
+    selectedClientId = seed.id;
+    saveState();
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
