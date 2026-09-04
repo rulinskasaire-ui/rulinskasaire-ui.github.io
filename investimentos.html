@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meus Investimentos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg: #0A0E16;
+    --bg-alt: #0D1220;
+    --surface: #121826;
+    --surface-2: #171E2E;
+    --border: #232C40;
+    --text: #E9ECF3;
+    --text-dim: #8B93A7;
+    --text-faint: #545E75;
+    --up: #33E2A0;
+    --down: #FF5C7A;
+    --gold: #F5C56B;
+    --focus: #5CC8FF;
+    --radius: 14px;
+    --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+    --font-body: 'Inter', 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: radial-gradient(ellipse 120% 80% at 50% -10%, #131b2e 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  button{ font-family: inherit; cursor:pointer; }
+  input, select{ font-family: inherit; }
+  ::selection{ background: rgba(51,226,160,0.25); }
+  a{ color: inherit; }
+
+  /* ---------- LOGIN ---------- */
+  #login-screen{
+    min-height: 100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding: 24px;
+  }
+  .login-card{
+    width: 100%; max-width: 380px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px 32px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+  .login-mark{
+    width: 44px; height:44px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--up), #17a97a);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--font-display); font-weight:700; font-size: 19px; color:#04140d;
+    margin-bottom: 20px;
+  }
+  .login-card h1{
+    font-family: var(--font-display); font-size: 22px; font-weight:600;
+    margin: 0 0 6px;
+  }
+  .login-card p{
+    color: var(--text-dim); font-size: 14px; margin: 0 0 26px; line-height:1.5;
+  }
+  .field-label{ font-size: 13px; color: var(--text-dim); margin-bottom: 7px; display:block; }
+  .login-input{
+    width:100%; padding: 13px 14px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg-alt); color: var(--text);
+    font-size: 15px; outline: none; transition: border-color .15s;
+  }
+  .login-input:focus{ border-color: var(--focus); }
+  .login-btn{
+    width:100%; margin-top: 18px; padding: 13px; border-radius: 10px; border:none;
+    background: var(--up); color:#04140d; font-weight:600; font-size:15px;
+    transition: filter .15s;
+  }
+  .login-btn:hover{ filter: brightness(1.08); }
+  .login-error{ color: var(--down); font-size: 13px; margin-top: 12px; min-height: 18px; }
+  .login-note{
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-faint); line-height:1.6;
+  }
+
+  /* ---------- APP SHELL ---------- */
+  #app{ display:none; max-width: 1180px; margin: 0 auto; padding: 28px 24px 80px; }
+  header.top{
+    display:flex; align-items:center; justify-content:space-between; gap: 16px;
+    margin-bottom: 28px;
+  }
+  .brand{ display:flex; align-items:center; gap: 12px; }
+  .brand-mark{
+    width: 36px; height:36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--up), #17a97a);
+    flex-shrink:0;
+  }
+  .brand-text .name{ font-family: var(--font-display); font-weight:600; font-size:16px; }
+  .brand-text .sub{ font-size: 12px; color: var(--text-faint); }
+  .top-actions{ display:flex; gap:10px; align-items:center; }
+  .icon-btn{
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 9px; padding: 9px 14px; font-size: 13px; display:flex; gap:7px; align-items:center;
+    transition: border-color .15s, color .15s;
+  }
+  .icon-btn:hover{ border-color: var(--text-faint); color: var(--text); }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 30px 32px;
+    margin-bottom: 18px;
+    display:flex; flex-wrap:wrap; gap: 28px; align-items:flex-end; justify-content:space-between;
+    position: relative; overflow:hidden;
+  }
+  .hero::before{
+    content:''; position:absolute; top:-60%; right:-10%; width: 340px; height:340px;
+    background: radial-gradient(circle, rgba(51,226,160,0.12), transparent 70%);
+    pointer-events:none;
+  }
+  .hero-label{ font-size: 13px; color: var(--text-dim); margin-bottom:8px; }
+  .hero-value{ font-family: var(--font-mono); font-size: 42px; font-weight:600; letter-spacing: -0.5px; }
+  .hero-delta{ font-size: 14px; margin-top: 8px; display:flex; align-items:center; gap:6px; font-family: var(--font-mono); }
+  .hero-delta.up{ color: var(--up); }
+  .hero-delta.down{ color: var(--down); }
+  .hero-meta{ text-align:right; font-size:13px; color: var(--text-dim); z-index:1; }
+  .hero-meta .best{ color: var(--gold); font-family: var(--font-mono); margin-top:4px; }
+
+  /* ---------- TICKER ---------- */
+  .ticker-wrap{
+    background: var(--bg-alt); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 0; margin-bottom: 24px; overflow:hidden; white-space:nowrap;
+  }
+  .ticker-track{
+    display:inline-flex; gap: 48px; animation: scroll-left 32s linear infinite;
+    font-family: var(--font-mono); font-size: 13.5px;
+  }
+  .ticker-track span.sep{ color: var(--text-faint); }
+  @keyframes scroll-left{ from{ transform: translateX(0);} to{ transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce){ .ticker-track{ animation: none; } }
+
+  /* ---------- CHIPS ---------- */
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 16px; }
+  .chip{
+    padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); font-size: 13px;
+    display:flex; align-items:center; gap:7px; transition: all .15s;
+  }
+  .chip .dot{ width:8px; height:8px; border-radius:50%; }
+  .chip.active{ border-color: currentColor; color: var(--text); background: var(--surface-2); }
+
+  /* ---------- CARDS / PANELS ---------- */
+  .panel{
+    background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 22px; margin-bottom: 20px;
+  }
+  .panel h2{ font-family: var(--font-display); font-size:16px; font-weight:600; margin:0 0 4px; }
+  .panel .panel-sub{ font-size: 13px; color: var(--text-faint); margin: 0 0 18px; }
+  .chart-box{ position:relative; height: 300px; }
+
+  .cards-grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); gap: 12px;
+    margin-bottom: 20px;
+  }
+  .inv-card{
+    background: var(--surface); border:1px solid var(--border); border-radius: 12px; padding: 16px;
+    border-left: 3px solid var(--card-color, var(--up));
+  }
+  .inv-card .inv-name{ font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+  .inv-card .inv-value{ font-family: var(--font-mono); font-size: 19px; font-weight:600; }
+  .inv-card .inv-delta{ font-family: var(--font-mono); font-size: 12.5px; margin-top: 6px; }
+  .inv-card .inv-delta.up{ color: var(--up); }
+  .inv-card .inv-delta.down{ color: var(--down); }
+  .inv-card .inv-delta.flat{ color: var(--text-faint); }
+
+  /* ---------- TABLE ---------- */
+  .table-scroll{ overflow-x:auto; }
+  table.data-table{ border-collapse: collapse; width:100%; min-width: 640px; font-size: 13.5px; }
+  table.data-table th, table.data-table td{
+    padding: 10px 12px; border-bottom: 1px solid var(--border); text-align:right; white-space:nowrap;
+  }
+  table.data-table th{ color: var(--text-dim); font-weight:500; font-size:12.5px; }
+  table.data-table th:first-child, table.data-table td:first-child{ text-align:left; }
+  table.data-table td[contenteditable="true"]{ font-family: var(--font-mono); outline:none; border-radius:6px; }
+  table.data-table td[contenteditable="true"]:focus{ background: var(--bg-alt); box-shadow: 0 0 0 1.5px var(--focus); }
+  table.data-table td.month-cell{ font-family: var(--font-mono); color: var(--text-dim); }
+  .row-actions button{
+    background:none; border:none; color: var(--text-faint); font-size:16px; padding: 2px 6px;
+  }
+  .row-actions button:hover{ color: var(--down); }
+  .table-toolbar{ display:flex; justify-content: space-between; align-items:center; margin-bottom: 16px; flex-wrap:wrap; gap:10px; }
+  .btn{
+    padding: 9px 16px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--text); font-size: 13.5px; font-weight:500; transition: border-color .15s;
+  }
+  .btn:hover{ border-color: var(--text-faint); }
+  .btn.primary{ background: var(--up); color:#04140d; border-color: transparent; font-weight:600; }
+  .btn.primary:hover{ filter: brightness(1.08); }
+  .btn.danger-outline{ color: var(--down); border-color: rgba(255,92,122,0.3); background:transparent; }
+
+  /* manage investments */
+  .manage-list{ display:flex; flex-direction:column; gap:8px; margin-bottom: 16px; }
+  .manage-row{
+    display:flex; align-items:center; gap:10px; padding: 9px 12px; background: var(--bg-alt);
+    border:1px solid var(--border); border-radius:9px; font-size: 13.5px;
+  }
+  .manage-row .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .manage-row .mname{ flex:1; }
+  .add-inv-row{ display:flex; gap:10px; }
+  .add-inv-row input{ flex:1; padding: 10px 12px; border-radius:9px; border:1px solid var(--border); background: var(--bg-alt); color:var(--text); font-size:13.5px; }
+
+  footer.foot{ text-align:center; color: var(--text-faint); font-size:12px; margin-top: 30px; line-height:1.7; }
+
+  @media (max-width: 640px){
+    .hero{ padding: 22px 20px; }
+    .hero-value{ font-size: 32px; }
+    .hero-meta{ text-align:left; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-mark">R$</div>
+    <h1 id="login-title">Acessar meus investimentos</h1>
+    <p id="login-sub">Digite sua senha para ver a evolução da carteira.</p>
+    <label class="field-label" for="password-input">Senha</label>
+    <input type="password" id="password-input" class="login-input" placeholder="••••••••" autocomplete="off">
+    <button class="login-btn" id="login-btn">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-note">
+      Site estático hospedado no GitHub Pages: os dados ficam salvos apenas neste navegador (localStorage) e a senha funciona como uma trava de tela, não como criptografia real. Não use dados extremamente sensíveis.
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <div class="name">Meus Investimentos</div>
+        <div class="sub" id="last-update-label">—</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="change-pass-btn">Trocar senha</button>
+      <button class="icon-btn" id="logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div>
+      <div class="hero-label">Patrimônio total</div>
+      <div class="hero-value" id="hero-total">R$ 0,00</div>
+      <div class="hero-delta" id="hero-delta"></div>
+    </div>
+    <div class="hero-meta">
+      <div id="hero-month-label">Nenhum mês lançado ainda</div>
+      <div class="best" id="hero-best"></div>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker-track" id="ticker-track">
+      <span>Cadastre valores para ver as novidades da carteira aqui.</span>
+    </div>
+  </div>
+
+  <!-- FILTER CHIPS -->
+  <div class="chips" id="filter-chips"></div>
+
+  <!-- EVOLUTION CHART -->
+  <div class="panel">
+    <h2>Evolução do patrimônio</h2>
+    <p class="panel-sub">Valor acumulado mês a mês, em reais.</p>
+    <div class="chart-box"><canvas id="evolution-chart"></canvas></div>
+  </div>
+
+  <!-- GROWTH CHART -->
+  <div class="panel">
+    <h2>Crescimento mês a mês</h2>
+    <p class="panel-sub">Variação percentual comparada ao mês anterior.</p>
+    <div class="chart-box"><canvas id="growth-chart"></canvas></div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="cards-grid" id="cards-grid"></div>
+
+  <!-- DATA TABLE -->
+  <div class="panel">
+    <div class="table-toolbar">
+      <div>
+        <h2 style="margin-bottom:2px;">Lançamentos mensais</h2>
+        <p class="panel-sub" style="margin-bottom:0;">Edite qualquer valor diretamente na tabela.</p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" id="add-month-btn">+ Novo mês</button>
+        <button class="btn primary" id="save-table-btn">Salvar alterações</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table" id="data-table">
+        <thead><tr id="table-head"></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MANAGE INVESTMENTS -->
+  <div class="panel">
+    <h2>Gerenciar investimentos</h2>
+    <p class="panel-sub">Adicione ou remova investimentos da sua carteira.</p>
+    <div class="manage-list" id="manage-list"></div>
+    <div class="add-inv-row">
+      <input type="text" id="new-inv-name" placeholder="Nome do novo investimento (ex: Tesouro Direto)">
+      <button class="btn primary" id="add-inv-btn">Adicionar</button>
+    </div>
+  </div>
+
+  <footer class="foot">
+    Dados salvos localmente neste navegador · Nenhuma informação é enviada a servidores externos
+  </footer>
+</div>
+
+<script>
+(function(){
+
+/* ============================================================
+   CONFIG & CONSTANTS
+============================================================ */
+const STORAGE_KEY = 'invest_tracker_data_v1';
+const AUTH_HASH_KEY = 'invest_tracker_pwhash_v1';
+const SESSION_KEY = 'invest_tracker_unlocked_v1';
+const DEFAULT_PASSWORD = 'meusinvestimentos';
+
+const PALETTE = ['#33E2A0', '#5CC8FF', '#C58BFF', '#F5C56B', '#FF6FA5', '#7C8CF8', '#4FE0D0', '#FFA05C'];
+const CONSOLIDATED_COLOR = '#F3F5FA';
+
+/* seed data reproducing the user's spreadsheet */
+const SEED = {
+  investments: [
+    { id: 'poupanca',    name: 'Poupança Itaú',            color: PALETTE[0] },
+    { id: 'btg',         name: 'Investimento BTG',         color: PALETTE[1] },
+    { id: 'previdencia', name: 'Previdência Antiga Itaú',  color: PALETTE[2] },
+    { id: 'cdb',         name: 'Renda Fixa CDB Itaú',      color: PALETTE[3] },
+    { id: 'acoes',       name: 'Ações',                     color: PALETTE[4] },
+    { id: 'cofrinho',    name: 'Cofrinho Itaú',            color: PALETTE[5] }
+  ],
+  months: [
+    { label: 'Maio/2026',    values: { poupanca: 70602.81, btg: 22977.84, previdencia: 60300.26, cdb: 2125.55, acoes: 1550.70, cofrinho: 624.48 } },
+    { label: 'Junho/2026',   values: { poupanca: 76945.25, btg: 23123.12, previdencia: 60843.87, cdb: 2146.80, acoes: 1639.41, cofrinho: 993.18 } },
+    { label: 'Julho/2026',   values: { poupanca: 87807.20, btg: 23488.30, previdencia: 61623.61, cdb: 2171.19, acoes: 1695.61, cofrinho: 1002.98 } },
+    { label: 'Agosto/2026',  values: { poupanca: 88397.24, btg: 23919.38, previdencia: 62302.60, cdb: 2193.45, acoes: 1769.46, cofrinho: 1011.95 } }
+  ]
+};
+
+let state = null;
+let currentFilter = 'todos'; // 'todos' | 'consolidado' | <investment id>
+let evolutionChart = null;
+let growthChart = null;
+
+/* ============================================================
+   UTILS
+============================================================ */
+function fmtBRL(v){
+  return v.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+function fmtPct(v){
+  const sign = v > 0 ? '+' : '';
+  return sign + v.toFixed(2).replace('.', ',') + '%';
+}
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function nextColor(){
+  const used = state.investments.map(i => i.color);
+  const free = PALETTE.find(c => !used.includes(c));
+  return free || PALETTE[state.investments.length % PALETTE.length];
+}
+
+/* ============================================================
+   PERSISTENCE
+============================================================ */
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw){
+    try { return JSON.parse(raw); } catch(e){ /* fall through */ }
+  }
+  return JSON.parse(JSON.stringify(SEED));
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+/* ============================================================
+   AUTH
+============================================================ */
+async function ensurePasswordSeed(){
+  if (!localStorage.getItem(AUTH_HASH_KEY)){
+    localStorage.setItem(AUTH_HASH_KEY, await sha256(DEFAULT_PASSWORD));
+  }
+}
+async function tryLogin(pw){
+  const hash = await sha256(pw);
+  const stored = localStorage.getItem(AUTH_HASH_KEY);
+  return hash === stored;
+}
+function unlock(){
+  sessionStorage.setItem(SESSION_KEY, '1');
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  boot();
+}
+function lock(){
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('password-input').value = '';
+}
+
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const pw = document.getElementById('password-input').value;
+  const ok = await tryLogin(pw);
+  if (ok){ unlock(); }
+  else { document.getElementById('login-error').textContent = 'Senha incorreta. Tente novamente.'; }
+});
+document.getElementById('password-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('login-btn').click();
+});
+document.getElementById('logout-btn').addEventListener('click', lock);
+document.getElementById('change-pass-btn').addEventListener('click', async () => {
+  const current = prompt('Digite sua senha atual:');
+  if (current === null) return;
+  const ok = await tryLogin(current);
+  if (!ok){ alert('Senha atual incorreta.'); return; }
+  const novo = prompt('Digite a nova senha:');
+  if (!novo) return;
+  localStorage.setItem(AUTH_HASH_KEY, await sha256(novo));
+  alert('Senha alterada com sucesso.');
+});
+
+/* ============================================================
+   DERIVED DATA
+============================================================ */
+function monthTotal(month){
+  return state.investments.reduce((sum, inv) => sum + (Number(month.values[inv.id]) || 0), 0);
+}
+function growthBetween(curr, prev){
+  if (!prev || prev === 0) return null;
+  return ((curr - prev) / prev) * 100;
+}
+
+/* ============================================================
+   RENDER: FILTER CHIPS
+============================================================ */
+function renderChips(){
+  const wrap = document.getElementById('filter-chips');
+  wrap.innerHTML = '';
+  const items = [
+    { id: 'todos', label: 'Todos os investimentos', color: 'var(--text)' },
+    { id: 'consolidado', label: 'Consolidado', color: CONSOLIDATED_COLOR },
+    ...state.investments.map(inv => ({ id: inv.id, label: inv.name, color: inv.color }))
+  ];
+  items.forEach(it => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (currentFilter === it.id ? ' active' : '');
+    chip.style.color = currentFilter === it.id ? it.color : '';
+    chip.innerHTML = `<span class="dot" style="background:${it.color}"></span>${it.label}`;
+    chip.addEventListener('click', () => { currentFilter = it.id; renderAll(); });
+    wrap.appendChild(chip);
+  });
+}
+
+/* ============================================================
+   RENDER: HERO
+============================================================ */
+function renderHero(){
+  const months = state.months;
+  const totalLabel = document.getElementById('hero-total');
+  const deltaEl = document.getElementById('hero-delta');
+  const monthLabelEl = document.getElementById('hero-month-label');
+  const bestEl = document.getElementById('hero-best');
+  const lastUpdateEl = document.getElementById('last-update-label');
+
+  if (months.length === 0){
+    totalLabel.textContent = fmtBRL(0);
+    deltaEl.textContent = '';
+    monthLabelEl.textContent = 'Nenhum mês lançado ainda';
+    bestEl.textContent = '';
+    lastUpdateEl.textContent = 'Sem lançamentos';
+    return;
+  }
+
+  const last = months[months.length - 1];
+  const prev = months.length > 1 ? months[months.length - 2] : null;
+  const total = monthTotal(last);
+  const prevTotal = prev ? monthTotal(prev) : null;
+  const growth = prevTotal !== null ? growthBetween(total, prevTotal) : null;
+
+  totalLabel.textContent = fmtBRL(total);
+  monthLabelEl.textContent = 'Referente a ' + last.label;
+  lastUpdateEl.textContent = 'Última atualização: ' + last.label;
+
+  if (growth === null){
+    deltaEl.textContent = 'Primeiro mês registrado';
+    deltaEl.className = 'hero-delta';
+  } else {
+    deltaEl.textContent = fmtPct(growth) + ' vs ' + prev.label;
+    deltaEl.className = 'hero-delta ' + (growth >= 0 ? 'up' : 'down');
+  }
+
+  if (prev){
+    let best = null;
+    state.investments.forEach(inv => {
+      const g = growthBetween(Number(last.values[inv.id])||0, Number(prev.values[inv.id])||0);
+      if (g !== null && (best === null || g > best.g)) best = { name: inv.name, g };
+    });
+    bestEl.textContent = best ? ('Destaque do mês: ' + best.name + ' ' + fmtPct(best.g)) : '';
+  } else {
+    bestEl.textContent = '';
+  }
+}
+
+/* ============================================================
+   RENDER: TICKER
+============================================================ */
+function renderTicker(){
+  const track = document.getElementById('ticker-track');
+  const months = state.months;
+  let messages = [];
+
+  if (months.length < 2){
+    messages = ['Cadastre pelo menos dois meses para ver comentários automáticos sobre a evolução da carteira.'];
+  } else {
+    const last = months[months.length - 1];
+    const prev = months[months.length - 2];
+    const total = monthTotal(last);
+    const prevTotal = monthTotal(prev);
+    const totalGrowth = growthBetween(total, prevTotal);
+
+    messages.push('📊 Patrimônio em ' + last.label + ': ' + fmtBRL(total) + ' (' + fmtPct(totalGrowth) + ' vs ' + prev.label + ')');
+
+    let best = null, worst = null, biggestValue = null;
+    state.investments.forEach(inv => {
+      const c = Number(last.values[inv.id]) || 0;
+      const p = Number(prev.values[inv.id]) || 0;
+      const g = growthBetween(c, p);
+      if (g !== null){
+        if (best === null || g > best.g) best = { name: inv.name, g };
+        if (worst === null || g < worst.g) worst = { name: inv.name, g };
+      }
+      if (biggestValue === null || c > biggestValue.value) biggestValue = { name: inv.name, value: c };
+    });
+
+    if (best) messages.push('🏆 Destaque do mês: ' + best.name + ' subiu ' + fmtPct(best.g));
+    if (worst && worst.g < 0) messages.push('⚠️ Atenção: ' + worst.name + ' caiu ' + fmtPct(worst.g));
+    if (biggestValue) messages.push('💰 Maior saldo: ' + biggestValue.name + ' com ' + fmtBRL(biggestValue.value));
+
+    if (months.length >= 3){
+      const first = months[0];
+      const totalGrowthAccum = growthBetween(total, monthTotal(first));
+      messages.push('📈 Desde ' + first.label + ': acumulado de ' + fmtPct(totalGrowthAccum));
+    }
+  }
+
+  track.innerHTML = '';
+  const build = () => messages.map(m => `<span>${m}</span>`).join('<span class="sep">&nbsp;&nbsp;•&nbsp;&nbsp;</span>');
+  track.innerHTML = build() + '<span class="sep">&nbsp;&nbsp;•&nbsp;&nbsp;</span>' + build();
+}
+
+/* ============================================================
+   RENDER: CARDS
+============================================================ */
+function renderCards(){
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = '';
+  const months = state.months;
+  if (months.length === 0) return;
+  const last = months[months.length - 1];
+  const prev = months.length > 1 ? months[months.length - 2] : null;
+
+  state.investments.forEach(inv => {
+    const curr = Number(last.values[inv.id]) || 0;
+    const p = prev ? (Number(prev.values[inv.id]) || 0) : null;
+    const g = p !== null ? growthBetween(curr, p) : null;
+
+    const card = document.createElement('div');
+    card.className = 'inv-card';
+    card.style.setProperty('--card-color', inv.color);
+    let deltaHtml = '<span class="inv-delta flat">Sem histórico anterior</span>';
+    if (g !== null){
+      deltaHtml = `<span class="inv-delta ${g >= 0 ? 'up' : 'down'}">${fmtPct(g)} vs mês anterior</span>`;
+    }
+    card.innerHTML = `
+      <div class="inv-name">${inv.name}</div>
+      <div class="inv-value">${fmtBRL(curr)}</div>
+      ${deltaHtml}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* ============================================================
+   RENDER: CHARTS
+============================================================ */
+function getActiveInvestments(){
+  if (currentFilter === 'todos' || currentFilter === 'consolidado') return state.investments;
+  return state.investments.filter(inv => inv.id === currentFilter);
+}
+
+function renderEvolutionChart(){
+  const ctx = document.getElementById('evolution-chart');
+  const labels = state.months.map(m => m.label);
+  let datasets = [];
+
+  if (currentFilter === 'consolidado'){
+    datasets = [{
+      label: 'Consolidado',
+      data: state.months.map(m => monthTotal(m)),
+      borderColor: CONSOLIDATED_COLOR,
+      backgroundColor: CONSOLIDATED_COLOR,
+      borderWidth: 2.5,
+      tension: 0.3,
+      pointRadius: 3
+    }];
+  } else {
+    const invs = getActiveInvestments();
+    datasets = invs.map(inv => ({
+      label: inv.name,
+      data: state.months.map(m => Number(m.values[inv.id]) || 0),
+      borderColor: inv.color,
+      backgroundColor: inv.color,
+      borderWidth: 2,
+      tension: 0.3,
+      pointRadius: 3
+    }));
+  }
+
+  if (evolutionChart) evolutionChart.destroy();
+  evolutionChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: chartOptions('currency')
+  });
+}
+
+function renderGrowthChart(){
+  const ctx = document.getElementById('growth-chart');
+  const months = state.months;
+  const labels = months.slice(1).map(m => m.label);
+  let datasets = [];
+
+  if (currentFilter === 'consolidado'){
+    const data = [];
+    for (let i = 1; i < months.length; i++){
+      data.push(growthBetween(monthTotal(months[i]), monthTotal(months[i-1])));
+    }
+    datasets = [{ label: 'Consolidado', data, backgroundColor: CONSOLIDATED_COLOR, borderRadius: 4 }];
+  } else {
+    const invs = getActiveInvestments();
+    datasets = invs.map(inv => {
+      const data = [];
+      for (let i = 1; i < months.length; i++){
+        const c = Number(months[i].values[inv.id]) || 0;
+        const p = Number(months[i-1].values[inv.id]) || 0;
+        data.push(growthBetween(c, p));
+      }
+      return { label: inv.name, data, backgroundColor: inv.color, borderRadius: 4 };
+    });
+  }
+
+  if (growthChart) growthChart.destroy();
+  growthChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: chartOptions('percent')
+  });
+}
+
+function chartOptions(kind){
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        labels: { color: '#8B93A7', boxWidth: 10, font: { family: 'Inter', size: 11.5 } }
+      },
+      tooltip: {
+        callbacks: {
+          label: (item) => {
+            const v = item.raw;
+            if (v === null || v === undefined) return item.dataset.label + ': —';
+            return item.dataset.label + ': ' + (kind === 'currency' ? fmtBRL(v) : fmtPct(v));
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: '#1B2233' }, ticks: { color: '#545E75', font: { family: 'IBM Plex Mono', size: 11 } } },
+      y: {
+        grid: { color: '#1B2233' },
+        ticks: {
+          color: '#545E75',
+          font: { family: 'IBM Plex Mono', size: 11 },
+          callback: (v) => kind === 'currency' ? 'R$ ' + (v/1000).toFixed(0) + 'k' : v + '%'
+        }
+      }
+    }
+  };
+}
+
+/* ============================================================
+   RENDER: DATA TABLE
+============================================================ */
+function renderTable(){
+  const head = document.getElementById('table-head');
+  const body = document.getElementById('table-body');
+  head.innerHTML = '<th>Mês</th>' + state.investments.map(inv =>
+    `<th style="color:${inv.color}">${inv.name}</th>`
+  ).join('') + '<th></th>';
+
+  body.innerHTML = '';
+  state.months.forEach((month, idx) => {
+    const tr = document.createElement('tr');
+    tr.dataset.idx = idx;
+    let cells = `<td class="month-cell" contenteditable="true" data-field="label">${month.label}</td>`;
+    state.investments.forEach(inv => {
+      const val = month.values[inv.id];
+      cells += `<td contenteditable="true" data-field="value" data-inv="${inv.id}">${val !== undefined ? val : ''}</td>`;
+    });
+    cells += `<td class="row-actions"><button data-action="delete-month" title="Remover mês">✕</button></td>`;
+    tr.innerHTML = cells;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('[data-action="delete-month"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr');
+      const idx = Number(tr.dataset.idx);
+      if (confirm('Remover o mês "' + state.months[idx].label + '"?')){
+        state.months.splice(idx, 1);
+        saveState();
+        renderAll();
+      }
+    });
+  });
+}
+
+function readTableIntoState(){
+  const rows = document.querySelectorAll('#table-body tr');
+  const newMonths = [];
+  rows.forEach(tr => {
+    const labelCell = tr.querySelector('[data-field="label"]');
+    const label = labelCell.textContent.trim() || 'Sem título';
+    const values = {};
+    tr.querySelectorAll('[data-field="value"]').forEach(td => {
+      const invId = td.dataset.inv;
+      const raw = td.textContent.trim().replace(/\./g,'').replace(',', '.');
+      const num = parseFloat(raw);
+      values[invId] = isNaN(num) ? 0 : num;
+    });
+    newMonths.push({ label, values });
+  });
+  state.months = newMonths;
+  saveState();
+}
+
+document.getElementById('save-table-btn').addEventListener('click', () => {
+  readTableIntoState();
+  renderAll();
+});
+
+document.getElementById('add-month-btn').addEventListener('click', () => {
+  const last = state.months[state.months.length - 1];
+  const values = {};
+  state.investments.forEach(inv => {
+    values[inv.id] = last ? (Number(last.values[inv.id]) || 0) : 0;
+  });
+  state.months.push({ label: 'Novo mês', values });
+  saveState();
+  renderTable();
+  const rows = document.querySelectorAll('#table-body tr');
+  const lastRow = rows[rows.length - 1];
+  if (lastRow) lastRow.querySelector('[data-field="label"]').focus();
+});
+
+/* ============================================================
+   MANAGE INVESTMENTS
+============================================================ */
+function renderManageList(){
+  const list = document.getElementById('manage-list');
+  list.innerHTML = '';
+  state.investments.forEach(inv => {
+    const row = document.createElement('div');
+    row.className = 'manage-row';
+    row.innerHTML = `
+      <span class="dot" style="background:${inv.color}"></span>
+      <span class="mname">${inv.name}</span>
+      <button class="btn danger-outline" data-remove="${inv.id}" style="padding:5px 12px; font-size:12.5px;">Remover</button>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.remove;
+      const inv = state.investments.find(i => i.id === id);
+      if (!confirm('Remover "' + inv.name + '"? Isso apaga o histórico desse investimento em todos os meses.')) return;
+      state.investments = state.investments.filter(i => i.id !== id);
+      state.months.forEach(m => { delete m.values[id]; });
+      if (currentFilter === id) currentFilter = 'todos';
+      saveState();
+      renderAll();
+    });
+  });
+}
+
+document.getElementById('add-inv-btn').addEventListener('click', () => {
+  const input = document.getElementById('new-inv-name');
+  const name = input.value.trim();
+  if (!name) return;
+  const id = 'inv_' + Date.now();
+  const color = nextColor();
+  state.investments.push({ id, name, color });
+  state.months.forEach(m => { m.values[id] = 0; });
+  input.value = '';
+  saveState();
+  renderAll();
+});
+
+/* ============================================================
+   BOOT / RENDER ALL
+============================================================ */
+function renderAll(){
+  renderChips();
+  renderHero();
+  renderTicker();
+  renderCards();
+  renderEvolutionChart();
+  renderGrowthChart();
+  renderTable();
+  renderManageList();
+}
+
+function boot(){
+  state = loadState();
+  renderAll();
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+(async function init(){
+  await ensurePasswordSeed();
+  if (sessionStorage.getItem(SESSION_KEY) === '1'){
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    boot();
+  }
+})();
+
+})();
+</script>
+</body>
+</html>
