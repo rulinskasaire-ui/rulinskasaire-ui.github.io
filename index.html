@@ -442,17 +442,38 @@
 (function(){
   "use strict";
 
-  var STORAGE_KEY = "ac_planejamento_comercial_v3";
+  var STORAGE_KEY = "ac_planejamento_comercial_v4";
   var MONTHS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
   var MONTHS_FULL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   var QUARTERS = ["Q1","Q2","Q3","Q4"];
   var STATUS_LABELS = {"planejado":"Planejado","em-andamento":"Em andamento","concluido":"Concluído","atrasado":"Atrasado"};
   var DEFAULT_CATEGORIES = [
-    {id:"cat-newtech", name:"New Technology", color:"#0067AC"},
-    {id:"cat-transformation", name:"Transformation", color:"#4FA3D1"},
-    {id:"cat-empower", name:"Empower", color:"#B8952F"},
-    {id:"cat-protection", name:"Protection", color:"#6B6E70"}
+    {id:"cat-demonstracao", name:"Demonstração", color:"#0067AC"},
+    {id:"cat-apresentacao", name:"Apresentação de Produto", color:"#4FA3D1"},
+    {id:"cat-walktheline", name:"Walk the Line", color:"#B8952F"},
+    {id:"cat-treinamento", name:"Treinamento", color:"#6B6E70"}
   ];
+  // Tradução usada apenas nos textos gerados por "Gerar visão" (imagem/PPT), que seguem em inglês.
+  var CATEGORY_EN_LABELS = {
+    "cat-demonstracao": "Demonstration",
+    "cat-apresentacao": "Product Presentation",
+    "cat-walktheline": "Walk the Line",
+    "cat-treinamento": "Training"
+  };
+  function categoryLabelEN(cat){
+    return CATEGORY_EN_LABELS[cat.id] || cat.name;
+  }
+  // Ajuda a acomodar categorias de versões antigas do site para as categorias atuais.
+  var CATEGORY_ID_REMAP = {
+    "cat-visita": "cat-apresentacao",
+    "cat-demo": "cat-demonstracao",
+    "cat-manutencao": "cat-walktheline",
+    "cat-proposta": "cat-apresentacao",
+    "cat-newtech": "cat-demonstracao",
+    "cat-transformation": "cat-walktheline",
+    "cat-empower": "cat-treinamento",
+    "cat-protection": "cat-walktheline"
+  };
 
   function uid(prefix){ return (prefix||"id") + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8); }
   function monthToQuarter(m){ return Math.ceil(m/3); }
@@ -475,18 +496,20 @@
           return parsed;
         }
       }
-      // try to migrate from previous version keys
-      var oldKeys = ["ac_planejamento_comercial_v2", "ac_planejamento_comercial_v1"];
+      // try to migrate from previous version keys (categorias sempre são atualizadas
+      // para o conjunto atual, para não arrastar nomes antigos de versões passadas)
+      var oldKeys = ["ac_planejamento_comercial_v3", "ac_planejamento_comercial_v2", "ac_planejamento_comercial_v1"];
       for(var k=0;k<oldKeys.length;k++){
         var oldRaw = localStorage.getItem(oldKeys[k]);
         if(oldRaw){
           var oldParsed = JSON.parse(oldRaw);
           if(oldParsed && Array.isArray(oldParsed.clients)){
-            if(!Array.isArray(oldParsed.categories) || oldParsed.categories.length===0){ oldParsed.categories = DEFAULT_CATEGORIES.slice(); }
+            oldParsed.categories = DEFAULT_CATEGORIES.slice();
             oldParsed.clients.forEach(function(c){
               (c.activities||[]).forEach(function(a){
                 if(typeof a.revenue !== "number") a.revenue = 0;
                 if(typeof a.department !== "string") a.department = "";
+                if(CATEGORY_ID_REMAP[a.categoryId]){ a.categoryId = CATEGORY_ID_REMAP[a.categoryId]; }
               });
             });
             return oldParsed;
@@ -1043,7 +1066,7 @@
     // subtitle
     ctx.fillStyle = "#6B6E70";
     ctx.font = "600 17px Arial, sans-serif";
-    var subtitle = client.plant + (client.owner ? "   ·   Especialista: " + client.owner : "");
+    var subtitle = client.plant + (client.owner ? "   ·   Specialist: " + client.owner : "");
     ctx.fillText(subtitle, marginX, 86);
 
     // brandmark top-right
@@ -1068,7 +1091,7 @@
     ctx.fillStyle = "#0A2540";
     ctx.font = "700 20px Arial, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("Roadmap comercial " + year, canvasW/2, 150);
+    ctx.fillText("Growth Roadmap " + year, canvasW/2, 150);
     ctx.textAlign = "left";
 
     // header row
@@ -1079,7 +1102,7 @@
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "700 14px Arial, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText("ATIVIDADES", marginX+16, tableTop+headerH/2+5);
+    ctx.fillText("ACTIVITIES", marginX+16, tableTop+headerH/2+5);
 
     ctx.textAlign = "center";
     for(var qi=0; qi<4; qi++){
@@ -1087,8 +1110,8 @@
       ctx.fillText(QUARTERS[qi], qx+qW/2, tableTop+headerH/2+5);
     }
     ctx.font = "700 13px Arial, sans-serif";
-    ctx.fillText("RECEITA PREVISTA", marginX+mainTableW+gap+revenueW/2, tableTop+headerH/2-2);
-    ctx.fillText("ATÉ Q4 / " + year, marginX+mainTableW+gap+revenueW/2, tableTop+headerH/2+16);
+    ctx.fillText("REVENUE", marginX+mainTableW+gap+revenueW/2, tableTop+headerH/2-2);
+    ctx.fillText("IMPACT END Q4", marginX+mainTableW+gap+revenueW/2, tableTop+headerH/2+16);
     ctx.textAlign = "left";
 
     // rows
@@ -1099,7 +1122,7 @@
       ctx.fillStyle = "#6B6E70";
       ctx.font = "italic 14px Arial, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("Nenhuma atividade programada para " + year, marginX+mainTableW/2, y0+rowH/2+5);
+      ctx.fillText("No activities scheduled for " + year, marginX+mainTableW/2, y0+rowH/2+5);
       ctx.textAlign = "left";
     } else {
       acts.forEach(function(a, idx){
@@ -1139,7 +1162,7 @@
         var barH = rowH - 26;
         drawChevronBar(ctx, barX, barY, barW, barH, lighten(cat.color,0.6), cat.color);
 
-        var barLabel = a.department ? a.department : cat.name;
+        var barLabel = a.department ? a.department : categoryLabelEN(cat);
         ctx.fillStyle = "#0A2540";
         ctx.font = "italic 700 13px Arial, sans-serif";
         ctx.textAlign = "center";
@@ -1167,11 +1190,12 @@
       var ly = tableTop + headerH + rows*rowH + 32;
       ctx.font = "600 13px Arial, sans-serif";
       state.categories.forEach(function(c){
+        var label = categoryLabelEN(c);
         ctx.fillStyle = c.color;
         ctx.fillRect(lx, ly-12, 12, 12);
         ctx.fillStyle = "#6B6E70";
-        ctx.fillText(c.name, lx+18, ly-2);
-        lx += 18 + ctx.measureText(c.name).width + 26;
+        ctx.fillText(label, lx+18, ly-2);
+        lx += 18 + ctx.measureText(label).width + 26;
       });
     }
 
@@ -1226,7 +1250,7 @@
     slide.background = { color: "FFFFFF" };
 
     slide.addText(client.name, { x:0.4, y:0.25, w:9.5, h:0.6, fontSize:28, bold:true, color:"0A2540", fontFace:"Arial" });
-    var subtitle = client.plant + (client.owner ? "   ·   Especialista: " + client.owner : "");
+    var subtitle = client.plant + (client.owner ? "   ·   Specialist: " + client.owner : "");
     slide.addText(subtitle, { x:0.4, y:0.8, w:9.5, h:0.35, fontSize:13, color:"6B6E70", fontFace:"Arial" });
 
     // brandmark
@@ -1236,7 +1260,7 @@
     // rule
     slide.addShape("line", { x:0.4, y:1.25, w:12.53, h:0, line:{ color:"0067AC", width:2.25 } });
 
-    slide.addText("Roadmap comercial " + year, { x:0.4, y:1.35, w:12.53, h:0.4, fontSize:16, bold:true, color:"0A2540", align:"center", fontFace:"Arial" });
+    slide.addText("Growth Roadmap " + year, { x:0.4, y:1.35, w:12.53, h:0.4, fontSize:16, bold:true, color:"0A2540", align:"center", fontFace:"Arial" });
 
     var marginX = 0.4;
     var labelW = 3.0;
@@ -1252,16 +1276,16 @@
 
     slide.addShape("rect", { x:marginX, y:tableTop, w:mainW, h:headerH, fill:{ color:"0067AC" }, line:{ type:"none" } });
     slide.addShape("rect", { x:marginX+mainW+gap, y:tableTop, w:revenueW, h:headerH, fill:{ color:"0067AC" }, line:{ type:"none" } });
-    slide.addText("ATIVIDADES", { x:marginX+0.12, y:tableTop, w:labelW-0.2, h:headerH, fontSize:11, bold:true, color:"FFFFFF", valign:"middle", fontFace:"Arial" });
+    slide.addText("ACTIVITIES", { x:marginX+0.12, y:tableTop, w:labelW-0.2, h:headerH, fontSize:11, bold:true, color:"FFFFFF", valign:"middle", fontFace:"Arial" });
     QUARTERS.forEach(function(q,i){
       slide.addText(q, { x:marginX+labelW+i*qW, y:tableTop, w:qW, h:headerH, fontSize:11, bold:true, color:"FFFFFF", align:"center", valign:"middle", fontFace:"Arial" });
     });
-    slide.addText("RECEITA PREVISTA / " + year, { x:marginX+mainW+gap, y:tableTop, w:revenueW, h:headerH, fontSize:9, bold:true, color:"FFFFFF", align:"center", valign:"middle", fontFace:"Arial" });
+    slide.addText("REVENUE IMPACT END Q4", { x:marginX+mainW+gap, y:tableTop, w:revenueW, h:headerH, fontSize:9, bold:true, color:"FFFFFF", align:"center", valign:"middle", fontFace:"Arial" });
 
     if(acts.length===0){
       var rowY0 = tableTop+headerH;
       slide.addShape("rect", { x:marginX, y:rowY0, w:mainW, h:rowH, fill:{ color:"EDEDED" }, line:{ color:"C9C9C9", width:0.5 } });
-      slide.addText("Nenhuma atividade programada para " + year, { x:marginX, y:rowY0, w:mainW, h:rowH, fontSize:11, italic:true, color:"6B6E70", align:"center", valign:"middle", fontFace:"Arial" });
+      slide.addText("No activities scheduled for " + year, { x:marginX, y:rowY0, w:mainW, h:rowH, fontSize:11, italic:true, color:"6B6E70", align:"center", valign:"middle", fontFace:"Arial" });
     } else {
       acts.forEach(function(a, idx){
         var rowY = tableTop + headerH + idx*rowH;
@@ -1281,7 +1305,7 @@
         var barH = rowH*0.7;
         var fillHex = lighten(cat.color, 0.6).replace(/rgb\(|\)|\s/g,"").split(",").map(function(n){ return ("0"+parseInt(n,10).toString(16)).slice(-2); }).join("");
         slide.addShape("homePlate", { x:barX, y:barY, w:barW, h:barH, fill:{ color: fillHex }, line:{ color: cat.color.replace("#",""), width:1 } });
-        var barLabel = a.department ? a.department : cat.name;
+        var barLabel = a.department ? a.department : categoryLabelEN(cat);
         slide.addText(barLabel, { x:barX, y:barY, w:barW, h:barH, fontSize:9, bold:true, italic:true, color:"0A2540", align:"center", valign:"middle", fontFace:"Arial" });
 
         slide.addText(formatCompactBRL(a.revenue||0), { x:marginX+mainW+gap, y:rowY, w:revenueW, h:rowH, fontSize:10, color:"1C2B36", align:"center", valign:"middle", fontFace:"Arial" });
@@ -1293,9 +1317,10 @@
     if(legendY < 7.1 && state.categories.length){
       var lx = marginX;
       state.categories.forEach(function(cat){
+        var label = categoryLabelEN(cat);
         slide.addShape("rect", { x:lx, y:legendY, w:0.18, h:0.18, fill:{ color: cat.color.replace("#","") }, line:{ type:"none" } });
-        slide.addText(cat.name, { x:lx+0.24, y:legendY-0.06, w:2.0, h:0.3, fontSize:9, color:"6B6E70", fontFace:"Arial" });
-        lx += 0.24 + (cat.name.length*0.075) + 0.3;
+        slide.addText(label, { x:lx+0.24, y:legendY-0.06, w:2.0, h:0.3, fontSize:9, color:"6B6E70", fontFace:"Arial" });
+        lx += 0.24 + (label.length*0.075) + 0.3;
       });
     }
 
@@ -1347,11 +1372,11 @@
       owner: "Especialista responsável",
       notes: "Este é um cliente de exemplo. Edite ou exclua para começar seu planejamento real.",
       activities: [
-        {id:uid("act"), year:y, title:"IPB-P", categoryId:"cat-newtech", department:"Power Train / FA / Cabin", responsible:"Especialista de produto", startMonth:4, endMonth:6, status:"planejado", revenue:800000, notes:""},
-        {id:uid("act"), year:y, title:"TN8", categoryId:"cat-transformation", department:"Power Train / FA / Cabin", responsible:"Vendedor", startMonth:5, endMonth:7, status:"planejado", revenue:300000, notes:""},
-        {id:uid("act"), year:y, title:"XCB", categoryId:"cat-empower", department:"Power Train / FA", responsible:"Especialista de produto", startMonth:3, endMonth:5, status:"planejado", revenue:75000, notes:""},
-        {id:uid("act"), year:y, title:"Automation (Powerhead / Screwfeeding)", categoryId:"cat-protection", department:"Power Train / FA", responsible:"Suporte técnico", startMonth:1, endMonth:3, status:"planejado", revenue:150000, notes:""},
-        {id:uid("act"), year:y, title:"Envio de proposta comercial", categoryId:"cat-newtech", department:"Power Train / FA / Body Shop", responsible:"Vendedor", startMonth:10, endMonth:11, status:"planejado", revenue:400000, notes:""}
+        {id:uid("act"), year:y, title:"IPB-P", categoryId:"cat-demonstracao", department:"Power Train / FA / Cabin", responsible:"Especialista de produto", startMonth:4, endMonth:6, status:"planejado", revenue:800000, notes:""},
+        {id:uid("act"), year:y, title:"TN8", categoryId:"cat-apresentacao", department:"Power Train / FA / Cabin", responsible:"Vendedor", startMonth:5, endMonth:7, status:"planejado", revenue:300000, notes:""},
+        {id:uid("act"), year:y, title:"XCB", categoryId:"cat-walktheline", department:"Power Train / FA", responsible:"Especialista de produto", startMonth:3, endMonth:5, status:"planejado", revenue:75000, notes:""},
+        {id:uid("act"), year:y, title:"Automation (Powerhead / Screwfeeding)", categoryId:"cat-treinamento", department:"Power Train / FA", responsible:"Suporte técnico", startMonth:1, endMonth:3, status:"planejado", revenue:150000, notes:""},
+        {id:uid("act"), year:y, title:"Envio de proposta comercial", categoryId:"cat-demonstracao", department:"Power Train / FA / Body Shop", responsible:"Vendedor", startMonth:10, endMonth:11, status:"planejado", revenue:400000, notes:""}
       ]
     };
     state.clients.push(seed);
