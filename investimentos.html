@@ -184,6 +184,8 @@
   .inv-card .inv-delta.up{ color: var(--up); }
   .inv-card .inv-delta.down{ color: var(--down); }
   .inv-card .inv-delta.flat{ color: var(--text-faint); font-weight:500; }
+  .inv-card.special-card{ background: var(--primary-tint); border-color: transparent; }
+  .inv-card.special-card .inv-name .dot{ background: var(--primary); }
 
   /* ---------- TABLE ---------- */
   .table-scroll{ overflow-x:auto; }
@@ -286,13 +288,16 @@
     </div>
   </div>
 
+  <!-- CARDS -->
+  <div class="cards-grid" id="cards-grid"></div>
+
   <!-- FILTER CHIPS -->
   <div class="chips" id="filter-chips"></div>
 
   <!-- EVOLUTION CHART -->
   <div class="panel">
     <h2>Evolução do patrimônio</h2>
-    <p class="panel-sub">Valor acumulado mês a mês, em reais.</p>
+    <p class="panel-sub">Valor acumulado mês a mês, em reais. Os rótulos mostram a variação % vs. o mês anterior.</p>
     <div class="chart-box"><canvas id="evolution-chart"></canvas></div>
   </div>
 
@@ -302,9 +307,6 @@
     <p class="panel-sub">Variação percentual comparada ao mês anterior.</p>
     <div class="chart-box"><canvas id="growth-chart"></canvas></div>
   </div>
-
-  <!-- CARDS -->
-  <div class="cards-grid" id="cards-grid"></div>
 
   <!-- DATA TABLE -->
   <div class="panel">
@@ -378,6 +380,38 @@ let state = null;
 let currentFilter = 'todos'; // 'todos' | 'consolidado' | <investment id>
 let evolutionChart = null;
 let growthChart = null;
+
+/* Plugin customizado do Chart.js: desenha o % de variação vs. mês anterior
+   acima de cada ponto do gráfico de evolução (não depende de nenhum CDN extra). */
+if (typeof Chart !== 'undefined'){
+  Chart.register({
+    id: 'percentLabelPlugin',
+    afterDatasetsDraw(chart){
+      if (chart.canvas.id !== 'evolution-chart') return;
+      const { ctx } = chart;
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return;
+        for (let i = 1; i < dataset.data.length; i++){
+          const prev = dataset.data[i - 1];
+          const curr = dataset.data[i];
+          if (prev === null || prev === undefined || prev === 0 || curr === null || curr === undefined) continue;
+          const pct = ((curr - prev) / prev) * 100;
+          const point = meta.data[i];
+          if (!point) continue;
+          const label = (pct > 0 ? '+' : '') + pct.toFixed(1).replace('.', ',') + '%';
+          ctx.save();
+          ctx.font = '600 10.5px Inter, sans-serif';
+          ctx.fillStyle = pct >= 0 ? '#00B285' : '#F0405A';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(label, point.x, point.y - 8);
+          ctx.restore();
+        }
+      });
+    }
+  });
+}
 
 /* ============================================================
    UTILS
@@ -600,6 +634,29 @@ function renderCards(){
   const last = months[months.length - 1];
   const prev = months.length > 1 ? months[months.length - 2] : null;
 
+  /* "Valor Passivo": diferença em R$ do total consolidado (todos os investimentos) de um mês para o outro */
+  const passiveCard = document.createElement('div');
+  passiveCard.className = 'inv-card special-card';
+  if (prev){
+    const totalCurr = monthTotal(last);
+    const totalPrev = monthTotal(prev);
+    const deltaValue = totalCurr - totalPrev;
+    const deltaPct = growthBetween(totalCurr, totalPrev);
+    const sign = deltaValue >= 0 ? '+' : '-';
+    passiveCard.innerHTML = `
+      <div class="inv-name"><span class="dot"></span>Valor Passivo</div>
+      <div class="inv-value tnum">${sign}${fmtBRL(Math.abs(deltaValue))}</div>
+      <span class="inv-delta ${deltaValue >= 0 ? 'up' : 'down'}">${fmtPct(deltaPct)} vs ${prev.label}</span>
+    `;
+  } else {
+    passiveCard.innerHTML = `
+      <div class="inv-name"><span class="dot"></span>Valor Passivo</div>
+      <div class="inv-value tnum">${fmtBRL(0)}</div>
+      <span class="inv-delta flat">Sem histórico anterior</span>
+    `;
+  }
+  grid.appendChild(passiveCard);
+
   state.investments.forEach(inv => {
     const curr = Number(last.values[inv.id]) || 0;
     const p = prev ? (Number(prev.values[inv.id]) || 0) : null;
@@ -711,6 +768,7 @@ function chartOptions(kind){
   return {
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { top: kind === 'currency' ? 26 : 6 } },
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
