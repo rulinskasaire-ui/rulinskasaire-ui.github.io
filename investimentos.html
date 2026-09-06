@@ -263,6 +263,9 @@
       </div>
     </div>
     <div class="top-actions">
+      <button class="icon-btn" id="export-btn">Exportar</button>
+      <button class="icon-btn" id="import-btn">Importar</button>
+      <input type="file" id="import-file-input" accept="application/json,.json" style="display:none">
       <button class="icon-btn" id="change-pass-btn">Trocar senha</button>
       <button class="icon-btn" id="logout-btn">Sair</button>
     </div>
@@ -446,6 +449,76 @@ function loadState(){
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
+
+/* ============================================================
+   EXPORTAR / IMPORTAR
+============================================================ */
+function validateImportedData(parsed){
+  if (!parsed || typeof parsed !== 'object') return false;
+  if (!Array.isArray(parsed.investments) || !Array.isArray(parsed.months)) return false;
+  const investmentsOk = parsed.investments.every(inv =>
+    inv && typeof inv.id === 'string' && typeof inv.name === 'string' && typeof inv.color === 'string'
+  );
+  if (!investmentsOk) return false;
+  const monthsOk = parsed.months.every(m =>
+    m && typeof m.label === 'string' && m.values && typeof m.values === 'object'
+  );
+  return monthsOk;
+}
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const payload = {
+    investments: state.investments,
+    months: state.months
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `investimentos-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file-input').click();
+});
+
+document.getElementById('import-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try {
+      parsed = JSON.parse(reader.result);
+    } catch (err){
+      alert('Não foi possível importar: o arquivo não é um JSON válido. Nenhum dado foi alterado.');
+      e.target.value = '';
+      return;
+    }
+    if (!validateImportedData(parsed)){
+      alert('Não foi possível importar: o arquivo não está no formato esperado (investimentos/meses). Nenhum dado foi alterado.');
+      e.target.value = '';
+      return;
+    }
+    state.investments = parsed.investments;
+    state.months = parsed.months;
+    if (!state.investments.some(inv => inv.id === currentFilter)) currentFilter = 'todos';
+    saveState();
+    renderAll();
+    alert('Dados importados com sucesso.');
+    e.target.value = '';
+  };
+  reader.onerror = () => {
+    alert('Não foi possível ler o arquivo. Nenhum dado foi alterado.');
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
 
 /* ============================================================
    AUTH
