@@ -116,6 +116,33 @@
   }
   .icon-btn:hover{ border-color: var(--primary); color: var(--primary); }
 
+  /* ---------- TABS ---------- */
+  .tabs{ display:flex; gap:6px; margin-bottom: 22px; background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-sm); padding: 5px; width: fit-content; }
+  .tab-btn{
+    border:none; background: transparent; color: var(--text-dim); font-weight:600; font-size: 13.5px;
+    padding: 9px 18px; border-radius: 8px; transition: all .15s;
+  }
+  .tab-btn.active{ background: var(--primary); color:#fff; }
+  .tab-btn:not(.active):hover{ color: var(--primary); }
+
+  /* ---------- STATUS HERO (Consultor de Gastos) ---------- */
+  .status-hero.status-green{ background: var(--up); background-image: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.18), transparent 55%); }
+  .status-hero.status-yellow{ background: var(--gold); background-image: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.18), transparent 55%); }
+  .status-hero.status-red{ background: var(--down); background-image: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.18), transparent 55%); }
+
+  /* ---------- GASTOS FORM ---------- */
+  .gastos-form{ margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .gastos-form-row{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .gastos-field select.login-input{ appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236E6B85' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat:no-repeat; background-position: right 12px center; padding-right: 34px; }
+  .gastos-form-actions{ display:flex; gap:10px; }
+  @media (max-width: 640px){ .gastos-form-row{ grid-template-columns: 1fr; } }
+
+  table.gastos-table td, table.gastos-table th{ text-align:left; }
+  table.gastos-table td:nth-child(3), table.gastos-table th:nth-child(3){ text-align:right; }
+  table.gastos-table td:nth-child(4), table.gastos-table th:nth-child(4){ text-align:center; }
+  .badge-recorrente{ display:inline-block; padding: 3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; background: var(--primary-tint); color: var(--primary); }
+  .badge-prazo{ display:inline-block; padding: 3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; background: #FFF1E3; color: var(--gold); }
+
   /* ---------- HERO ---------- */
   .hero{
     background: var(--primary);
@@ -271,6 +298,14 @@
     </div>
   </header>
 
+  <!-- TABS -->
+  <div class="tabs" id="main-tabs">
+    <button class="tab-btn active" data-tab="investimentos">Investimentos</button>
+    <button class="tab-btn" data-tab="gastos">Consultor de Gastos</button>
+  </div>
+
+  <div id="view-investimentos" class="view">
+
   <!-- HERO -->
   <div class="hero">
     <div>
@@ -342,6 +377,140 @@
     </div>
   </div>
 
+  </div><!-- /view-investimentos -->
+
+  <div id="view-gastos" class="view" style="display:none;">
+
+  <!-- STATUS HERO -->
+  <div class="hero status-hero" id="gastos-status-hero">
+    <div>
+      <div class="hero-label" id="gastos-status-label">Situação em —</div>
+      <div class="hero-value tnum" id="gastos-status-saldo">R$ 0,00</div>
+      <div class="hero-delta" id="gastos-status-verdict"></div>
+    </div>
+    <div class="hero-meta">
+      <div id="gastos-status-income">Entradas: R$ 0,00</div>
+      <div id="gastos-status-expense">Saídas: R$ 0,00</div>
+    </div>
+  </div>
+
+  <!-- PROJECTION -->
+  <div class="panel">
+    <h2>Projeção dos próximos meses</h2>
+    <p class="panel-sub">Saldo estimado (entradas − saídas) considerando recorrências e prazos de término.</p>
+    <div class="chart-box"><canvas id="projection-chart"></canvas></div>
+  </div>
+
+  <!-- ENTRADAS -->
+  <div class="panel">
+    <h2>Entradas</h2>
+    <p class="panel-sub">Salário, aluguel recebido, renda passiva e outras fontes de dinheiro.</p>
+    <form class="gastos-form" id="income-form">
+      <input type="hidden" id="income-form-editing-id">
+      <div class="gastos-form-row">
+        <div class="gastos-field">
+          <label class="field-label">Nome</label>
+          <input type="text" id="income-form-name" class="login-input" placeholder="Ex: Salário CLT" required>
+        </div>
+        <div class="gastos-field">
+          <label class="field-label">Categoria</label>
+          <select id="income-form-category" class="login-input"></select>
+        </div>
+      </div>
+      <div class="gastos-form-row">
+        <div class="gastos-field">
+          <label class="field-label">Valor mensal (R$)</label>
+          <input type="number" step="0.01" min="0" id="income-form-amount" class="login-input" placeholder="0,00" required>
+        </div>
+        <div class="gastos-field">
+          <label class="field-label">Dia do mês que cai na conta</label>
+          <input type="number" min="1" max="31" id="income-form-day" class="login-input" placeholder="Ex: 5">
+        </div>
+      </div>
+      <div class="gastos-form-row">
+        <div class="gastos-field">
+          <label class="field-label">Recorrência</label>
+          <select id="income-form-recurring" class="login-input">
+            <option value="true">Mensal (recorrente, sem previsão de acabar)</option>
+            <option value="false">Tem prazo para acabar</option>
+          </select>
+        </div>
+        <div class="gastos-field" id="income-form-end-wrap" style="display:none;">
+          <label class="field-label">Último mês em que recebo esse valor</label>
+          <input type="month" id="income-form-end" class="login-input">
+        </div>
+      </div>
+      <div class="gastos-form-actions">
+        <button type="submit" class="btn primary" id="income-form-submit">Adicionar entrada</button>
+        <button type="button" class="btn" id="income-form-cancel" style="display:none;">Cancelar edição</button>
+      </div>
+    </form>
+    <div class="table-scroll">
+      <table class="data-table gastos-table">
+        <thead>
+          <tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr>
+        </thead>
+        <tbody id="income-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SAÍDAS -->
+  <div class="panel">
+    <h2>Saídas</h2>
+    <p class="panel-sub">Contas fixas, assinaturas e demais despesas a pagar.</p>
+    <form class="gastos-form" id="expense-form">
+      <input type="hidden" id="expense-form-editing-id">
+      <div class="gastos-form-row">
+        <div class="gastos-field">
+          <label class="field-label">Nome</label>
+          <input type="text" id="expense-form-name" class="login-input" placeholder="Ex: Aluguel apartamento" required>
+        </div>
+        <div class="gastos-field">
+          <label class="field-label">Categoria</label>
+          <select id="expense-form-category" class="login-input"></select>
+        </div>
+      </div>
+      <div class="gastos-form-row">
+        <div class="gastos-field">
+          <label class="field-label">Valor mensal (R$)</label>
+          <input type="number" step="0.01" min="0" id="expense-form-amount" class="login-input" placeholder="0,00" required>
+        </div>
+        <div class="gastos-field">
+          <label class="field-label">Dia do mês do vencimento</label>
+          <input type="number" min="1" max="31" id="expense-form-day" class="login-input" placeholder="Ex: 10">
+        </div>
+      </div>
+      <div class="gastos-form-row">
+        <div class="gastos-field">
+          <label class="field-label">Recorrência</label>
+          <select id="expense-form-recurring" class="login-input">
+            <option value="true">Mensal (recorrente, sem previsão de acabar)</option>
+            <option value="false">Tem prazo para acabar</option>
+          </select>
+        </div>
+        <div class="gastos-field" id="expense-form-end-wrap" style="display:none;">
+          <label class="field-label">Último mês em que pago essa conta</label>
+          <input type="month" id="expense-form-end" class="login-input">
+        </div>
+      </div>
+      <div class="gastos-form-actions">
+        <button type="submit" class="btn primary" id="expense-form-submit">Adicionar saída</button>
+        <button type="button" class="btn" id="expense-form-cancel" style="display:none;">Cancelar edição</button>
+      </div>
+    </form>
+    <div class="table-scroll">
+      <table class="data-table gastos-table">
+        <thead>
+          <tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr>
+        </thead>
+        <tbody id="expense-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  </div><!-- /view-gastos -->
+
   <footer class="foot">
     Dados salvos localmente neste navegador · Nenhuma informação é enviada a servidores externos
   </footer>
@@ -360,6 +529,12 @@ const DEFAULT_PASSWORD = 'meusinvestimentos';
 
 const PALETTE = ['#7A17D6', '#00B8D9', '#00B285', '#F2994A', '#F0405A', '#5B6EF5', '#12A594', '#C2185B'];
 const CONSOLIDATED_COLOR = '#1E1B2E';
+
+const INCOME_CATEGORIES_DEFAULT = ['Salário', 'Renda Passiva', 'Aluguel Recebido', 'Freelance', 'Outros'];
+const EXPENSE_CATEGORIES_DEFAULT = ['Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Assinaturas', 'Cartão de Crédito', 'Outros'];
+const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const PROJECTION_MONTHS = 6;
+const GREEN_THRESHOLD = 3000;
 
 /* seed data reproducing the user's spreadsheet */
 const SEED = {
@@ -439,12 +614,33 @@ function nextColor(){
 /* ============================================================
    PERSISTENCE
 ============================================================ */
+function emptyGastos(){
+  return {
+    categories: {
+      income: [...INCOME_CATEGORIES_DEFAULT],
+      expense: [...EXPENSE_CATEGORIES_DEFAULT]
+    },
+    incomes: [],
+    expenses: []
+  };
+}
+function ensureGastosShape(s){
+  if (!s.gastos) s.gastos = emptyGastos();
+  if (!s.gastos.categories) s.gastos.categories = { income: [...INCOME_CATEGORIES_DEFAULT], expense: [...EXPENSE_CATEGORIES_DEFAULT] };
+  if (!Array.isArray(s.gastos.categories.income)) s.gastos.categories.income = [...INCOME_CATEGORIES_DEFAULT];
+  if (!Array.isArray(s.gastos.categories.expense)) s.gastos.categories.expense = [...EXPENSE_CATEGORIES_DEFAULT];
+  if (!Array.isArray(s.gastos.incomes)) s.gastos.incomes = [];
+  if (!Array.isArray(s.gastos.expenses)) s.gastos.expenses = [];
+  return s;
+}
 function loadState(){
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw){
-    try { return JSON.parse(raw); } catch(e){ /* fall through */ }
+    try { return ensureGastosShape(JSON.parse(raw)); } catch(e){ /* fall through */ }
   }
-  return JSON.parse(JSON.stringify(SEED));
+  const seeded = JSON.parse(JSON.stringify(SEED));
+  seeded.gastos = emptyGastos();
+  return seeded;
 }
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -463,13 +659,21 @@ function validateImportedData(parsed){
   const monthsOk = parsed.months.every(m =>
     m && typeof m.label === 'string' && m.values && typeof m.values === 'object'
   );
-  return monthsOk;
+  if (!monthsOk) return false;
+  /* gastos é opcional para manter compatibilidade com backups antigos */
+  if (parsed.gastos !== undefined){
+    if (typeof parsed.gastos !== 'object' || parsed.gastos === null) return false;
+    if (parsed.gastos.incomes !== undefined && !Array.isArray(parsed.gastos.incomes)) return false;
+    if (parsed.gastos.expenses !== undefined && !Array.isArray(parsed.gastos.expenses)) return false;
+  }
+  return true;
 }
 
 document.getElementById('export-btn').addEventListener('click', () => {
   const payload = {
     investments: state.investments,
-    months: state.months
+    months: state.months,
+    gastos: state.gastos
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -507,9 +711,12 @@ document.getElementById('import-file-input').addEventListener('change', (e) => {
     }
     state.investments = parsed.investments;
     state.months = parsed.months;
+    state.gastos = parsed.gastos ? parsed.gastos : emptyGastos();
+    ensureGastosShape(state);
     if (!state.investments.some(inv => inv.id === currentFilter)) currentFilter = 'todos';
     saveState();
     renderAll();
+    renderGastos();
     alert('Dados importados com sucesso.');
     e.target.value = '';
   };
@@ -997,6 +1204,268 @@ document.getElementById('add-inv-btn').addEventListener('click', () => {
 });
 
 /* ============================================================
+   TABS
+============================================================ */
+document.getElementById('main-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  document.getElementById('view-investimentos').style.display = tab === 'investimentos' ? 'block' : 'none';
+  document.getElementById('view-gastos').style.display = tab === 'gastos' ? 'block' : 'none';
+  if (tab === 'gastos') renderGastos();
+});
+
+/* ============================================================
+   CONSULTOR DE GASTOS — utils
+============================================================ */
+let gastosProjectionChart = null;
+let editingIncomeId = null;
+let editingExpenseId = null;
+
+function currentMonthKey(){
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+}
+function getMonthKeys(n){
+  const keys = [];
+  const now = new Date();
+  for (let i = 0; i < n; i++){
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    keys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+  }
+  return keys;
+}
+function monthKeyLabel(key){
+  const [y, m] = key.split('-');
+  return MONTH_NAMES[parseInt(m, 10) - 1] + '/' + y;
+}
+function isActiveInMonth(entry, monthKey){
+  if (entry.recurring) return true;
+  if (!entry.endDate) return true;
+  return monthKey <= entry.endDate;
+}
+function computeMonthTotals(monthKey){
+  const incomeTotal = state.gastos.incomes.filter(e => isActiveInMonth(e, monthKey)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const expenseTotal = state.gastos.expenses.filter(e => isActiveInMonth(e, monthKey)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  return { incomeTotal, expenseTotal, saldo: incomeTotal - expenseTotal };
+}
+function statusForSaldo(saldo){
+  if (saldo < 0) return 'red';
+  if (saldo < GREEN_THRESHOLD) return 'yellow';
+  return 'green';
+}
+function statusColor(status){
+  return status === 'green' ? '#00B285' : status === 'yellow' ? '#F2A93B' : '#F0405A';
+}
+function statusVerdictText(status){
+  if (status === 'red') return '🔴 No vermelho — as saídas superam as entradas neste mês.';
+  if (status === 'yellow') return '🟡 Atenção — sobra pouco, risco de faltar dinheiro.';
+  return '🟢 Tranquilo — sobra confortável no mês.';
+}
+
+/* ============================================================
+   CONSULTOR DE GASTOS — categorias
+============================================================ */
+function populateCategorySelect(selectEl, type, selected){
+  const cats = type === 'income' ? state.gastos.categories.income : state.gastos.categories.expense;
+  selectEl.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('')
+    + `<option value="__new__">+ Nova categoria...</option>`;
+  if (selected && cats.includes(selected)) selectEl.value = selected;
+}
+function handleCategorySelectChange(selectEl, type){
+  selectEl.addEventListener('change', () => {
+    if (selectEl.value !== '__new__') return;
+    const name = prompt('Nome da nova categoria:');
+    if (!name || !name.trim()){ selectEl.value = (type === 'income' ? state.gastos.categories.income : state.gastos.categories.expense)[0]; return; }
+    const trimmed = name.trim();
+    const list = type === 'income' ? state.gastos.categories.income : state.gastos.categories.expense;
+    if (!list.includes(trimmed)) list.push(trimmed);
+    saveState();
+    populateCategorySelect(selectEl, type, trimmed);
+  });
+}
+handleCategorySelectChange(document.getElementById('income-form-category'), 'income');
+handleCategorySelectChange(document.getElementById('expense-form-category'), 'expense');
+
+/* ============================================================
+   CONSULTOR DE GASTOS — toggle campo de prazo
+============================================================ */
+function wireRecurringToggle(prefix){
+  const recurringSel = document.getElementById(prefix + '-form-recurring');
+  const endWrap = document.getElementById(prefix + '-form-end-wrap');
+  recurringSel.addEventListener('change', () => {
+    endWrap.style.display = recurringSel.value === 'false' ? 'block' : 'none';
+  });
+}
+wireRecurringToggle('income');
+wireRecurringToggle('expense');
+
+/* ============================================================
+   CONSULTOR DE GASTOS — formulários (adicionar/editar)
+============================================================ */
+function resetGastosForm(prefix){
+  document.getElementById(prefix + '-form').reset();
+  document.getElementById(prefix + '-form-editing-id').value = '';
+  document.getElementById(prefix + '-form-end-wrap').style.display = 'none';
+  document.getElementById(prefix + '-form-submit').textContent = prefix === 'income' ? 'Adicionar entrada' : 'Adicionar saída';
+  document.getElementById(prefix + '-form-cancel').style.display = 'none';
+  populateCategorySelect(document.getElementById(prefix + '-form-category'), prefix);
+  if (prefix === 'income') editingIncomeId = null; else editingExpenseId = null;
+}
+
+function wireGastosForm(prefix){
+  const form = document.getElementById(prefix + '-form');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById(prefix + '-form-name').value.trim();
+    const category = document.getElementById(prefix + '-form-category').value;
+    const amount = parseFloat(document.getElementById(prefix + '-form-amount').value);
+    const day = document.getElementById(prefix + '-form-day').value ? parseInt(document.getElementById(prefix + '-form-day').value, 10) : null;
+    const recurring = document.getElementById(prefix + '-form-recurring').value === 'true';
+    const endDate = recurring ? null : (document.getElementById(prefix + '-form-end').value || null);
+    if (!name || isNaN(amount) || amount < 0 || category === '__new__') return;
+
+    const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
+    const editingId = prefix === 'income' ? editingIncomeId : editingExpenseId;
+    if (editingId){
+      const entry = list.find(e => e.id === editingId);
+      if (entry){ Object.assign(entry, { name, category, amount, day, recurring, endDate }); }
+    } else {
+      list.push({ id: (prefix + '_' + Date.now()), name, category, amount, day, recurring, endDate });
+    }
+    saveState();
+    resetGastosForm(prefix);
+    renderGastos();
+  });
+  document.getElementById(prefix + '-form-cancel').addEventListener('click', () => resetGastosForm(prefix));
+}
+wireGastosForm('income');
+wireGastosForm('expense');
+
+function editGastosEntry(prefix, id){
+  const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
+  const entry = list.find(e => e.id === id);
+  if (!entry) return;
+  document.getElementById(prefix + '-form-editing-id').value = id;
+  document.getElementById(prefix + '-form-name').value = entry.name;
+  populateCategorySelect(document.getElementById(prefix + '-form-category'), prefix, entry.category);
+  document.getElementById(prefix + '-form-amount').value = entry.amount;
+  document.getElementById(prefix + '-form-day').value = entry.day || '';
+  document.getElementById(prefix + '-form-recurring').value = entry.recurring ? 'true' : 'false';
+  document.getElementById(prefix + '-form-end-wrap').style.display = entry.recurring ? 'none' : 'block';
+  document.getElementById(prefix + '-form-end').value = entry.endDate || '';
+  document.getElementById(prefix + '-form-submit').textContent = 'Salvar alterações';
+  document.getElementById(prefix + '-form-cancel').style.display = 'inline-block';
+  if (prefix === 'income') editingIncomeId = id; else editingExpenseId = id;
+  document.getElementById(prefix + '-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function deleteGastosEntry(prefix, id){
+  const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
+  const entry = list.find(e => e.id === id);
+  if (!entry || !confirm('Remover "' + entry.name + '"?')) return;
+  const idx = list.indexOf(entry);
+  list.splice(idx, 1);
+  saveState();
+  renderGastos();
+}
+
+/* ============================================================
+   CONSULTOR DE GASTOS — render listas
+============================================================ */
+function renderGastosList(prefix){
+  const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
+  const tbody = document.getElementById(prefix + '-list');
+  tbody.innerHTML = '';
+  if (list.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-faint); text-align:center; padding:20px;">Nenhum lançamento cadastrado ainda.</td></tr>`;
+    return;
+  }
+  list.forEach(entry => {
+    const tr = document.createElement('tr');
+    const recorrenciaHtml = entry.recurring
+      ? `<span class="badge-recorrente">Mensal</span>`
+      : `<span class="badge-prazo">Até ${entry.endDate ? monthKeyLabel(entry.endDate) : '—'}</span>`;
+    tr.innerHTML = `
+      <td>${entry.name}</td>
+      <td>${entry.category}</td>
+      <td class="tnum">${fmtBRL(Number(entry.amount) || 0)}</td>
+      <td>${entry.day ? 'Dia ' + entry.day : '—'}</td>
+      <td>${recorrenciaHtml}</td>
+      <td class="row-actions">
+        <button data-edit="${entry.id}" title="Editar">✎</button>
+        <button data-delete="${entry.id}" title="Remover">✕</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => editGastosEntry(prefix, btn.dataset.edit)));
+  tbody.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => deleteGastosEntry(prefix, btn.dataset.delete)));
+}
+
+/* ============================================================
+   CONSULTOR DE GASTOS — status hero
+============================================================ */
+function renderGastosStatus(){
+  const monthKey = currentMonthKey();
+  const { incomeTotal, expenseTotal, saldo } = computeMonthTotals(monthKey);
+  const status = statusForSaldo(saldo);
+  const hero = document.getElementById('gastos-status-hero');
+  hero.classList.remove('status-green', 'status-yellow', 'status-red');
+  hero.classList.add('status-' + status);
+
+  document.getElementById('gastos-status-label').textContent = 'Situação em ' + monthKeyLabel(monthKey);
+  document.getElementById('gastos-status-saldo').textContent = (saldo >= 0 ? '' : '-') + fmtBRL(Math.abs(saldo));
+  document.getElementById('gastos-status-verdict').textContent = statusVerdictText(status);
+  document.getElementById('gastos-status-verdict').className = 'hero-delta';
+  document.getElementById('gastos-status-income').textContent = 'Entradas: ' + fmtBRL(incomeTotal);
+  document.getElementById('gastos-status-expense').textContent = 'Saídas: ' + fmtBRL(expenseTotal);
+}
+
+/* ============================================================
+   CONSULTOR DE GASTOS — gráfico de projeção
+============================================================ */
+function renderGastosProjection(){
+  const canvas = document.getElementById('projection-chart');
+  if (typeof Chart === 'undefined') return;
+  const ctx = canvas.getContext('2d');
+  const keys = getMonthKeys(PROJECTION_MONTHS);
+  const labels = keys.map(monthKeyLabel);
+  const saldos = keys.map(k => computeMonthTotals(k).saldo);
+  const colors = saldos.map(s => statusColor(statusForSaldo(s)));
+
+  if (gastosProjectionChart) gastosProjectionChart.destroy();
+  gastosProjectionChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Saldo projetado', data: saldos, backgroundColor: colors, borderRadius: 6 }]
+    },
+    options: {
+      ...chartOptions('currency'),
+      plugins: {
+        ...chartOptions('currency').plugins,
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+/* ============================================================
+   CONSULTOR DE GASTOS — render geral
+============================================================ */
+function renderGastos(){
+  renderGastosStatus();
+  renderGastosProjection();
+  renderGastosList('income');
+  renderGastosList('expense');
+  populateCategorySelect(document.getElementById('income-form-category'), 'income');
+  populateCategorySelect(document.getElementById('expense-form-category'), 'expense');
+}
+
+/* ============================================================
    BOOT / RENDER ALL
 ============================================================ */
 function renderAll(){
@@ -1013,6 +1482,7 @@ function renderAll(){
 function boot(){
   state = loadState();
   renderAll();
+  renderGastos();
 }
 
 /* ============================================================
