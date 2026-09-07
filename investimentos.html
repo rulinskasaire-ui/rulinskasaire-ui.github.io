@@ -394,11 +394,31 @@
     </div>
   </div>
 
+  <!-- DAILY FLOW -->
+  <div class="panel">
+    <div class="table-toolbar">
+      <div>
+        <h2 style="margin-bottom:2px;">Fluxo diário do mês</h2>
+        <p class="panel-sub" style="margin-bottom:0;">Barras: saldo acumulado (entradas − saídas até o dia). Linha: gastos acumulados. Mostra os dias mais críticos.</p>
+      </div>
+      <select id="daily-month-select" class="login-input" style="max-width:220px;"></select>
+    </div>
+    <div class="chart-box"><canvas id="daily-flow-chart"></canvas></div>
+  </div>
+
   <!-- PROJECTION -->
   <div class="panel">
     <h2>Projeção dos próximos meses</h2>
     <p class="panel-sub">Saldo estimado (entradas − saídas) considerando recorrências e prazos de término.</p>
     <div class="chart-box"><canvas id="projection-chart"></canvas></div>
+  </div>
+
+  <!-- CATEGORY PIE -->
+  <div class="panel">
+    <h2>Gastos por categoria</h2>
+    <p class="panel-sub">Distribuição das saídas ativas em <span id="pie-month-label">—</span>.</p>
+    <div class="chart-box"><canvas id="category-pie-chart"></canvas></div>
+    <p class="panel-sub" id="category-pie-empty" style="display:none; text-align:center; margin-top:12px;">Nenhuma saída cadastrada para este mês ainda.</p>
   </div>
 
   <!-- ENTRADAS -->
@@ -1221,6 +1241,8 @@ document.getElementById('main-tabs').addEventListener('click', (e) => {
    CONSULTOR DE GASTOS — utils
 ============================================================ */
 let gastosProjectionChart = null;
+let dailyFlowChart = null;
+let categoryPieChart = null;
 let editingIncomeId = null;
 let editingExpenseId = null;
 
@@ -1454,11 +1476,133 @@ function renderGastosProjection(){
 }
 
 /* ============================================================
+   CONSULTOR DE GASTOS — fluxo diário (linha de gastos x coluna de saldo)
+============================================================ */
+function daysInMonth(monthKey){
+  const [y, m] = monthKey.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+function computeDailyFlow(monthKey){
+  const totalDays = daysInMonth(monthKey);
+  const incomesActive = state.gastos.incomes.filter(e => isActiveInMonth(e, monthKey));
+  const expensesActive = state.gastos.expenses.filter(e => isActiveInMonth(e, monthKey));
+  let cumIncome = 0, cumExpense = 0;
+  const days = [], balances = [], cumExpenses = [];
+  for (let d = 1; d <= totalDays; d++){
+    const incomeToday = incomesActive.filter(e => (e.day || 1) === d).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const expenseToday = expensesActive.filter(e => (e.day || 1) === d).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    cumIncome += incomeToday;
+    cumExpense += expenseToday;
+    days.push(d);
+    balances.push(cumIncome - cumExpense);
+    cumExpenses.push(cumExpense);
+  }
+  return { days, balances, cumExpenses };
+}
+function populateDailyMonthSelect(){
+  const sel = document.getElementById('daily-month-select');
+  const keys = getMonthKeys(PROJECTION_MONTHS);
+  const prevValue = sel.value;
+  sel.innerHTML = keys.map(k => `<option value="${k}">${monthKeyLabel(k)}</option>`).join('');
+  sel.value = keys.includes(prevValue) ? prevValue : currentMonthKey();
+}
+function renderDailyFlowChart(){
+  const monthKey = document.getElementById('daily-month-select').value || currentMonthKey();
+  const canvas = document.getElementById('daily-flow-chart');
+  if (typeof Chart === 'undefined') return;
+  const ctx = canvas.getContext('2d');
+  const { days, balances, cumExpenses } = computeDailyFlow(monthKey);
+  const barColors = balances.map(b => statusColor(statusForSaldo(b)));
+  const base = chartOptions('currency');
+
+  if (dailyFlowChart) dailyFlowChart.destroy();
+  dailyFlowChart = new Chart(ctx, {
+    data: {
+      labels: days.map(d => String(d)),
+      datasets: [
+        { type: 'bar', label: 'Saldo acumulado', data: balances, backgroundColor: barColors, borderRadius: 3, order: 2 },
+        { type: 'line', label: 'Gastos acumulados', data: cumExpenses, borderColor: '#1E1B2E', backgroundColor: '#1E1B2E', borderWidth: 2.5, tension: 0.25, pointRadius: 2, fill: false, order: 1 }
+      ]
+    },
+    options: {
+      ...base,
+      scales: {
+        ...base.scales,
+        x: {
+          ...base.scales.x,
+          title: { display: true, text: 'Dia do mês', color: '#A19EB5', font: { family: 'Inter', size: 11.5 } },
+          ticks: { ...base.scales.x.ticks, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }
+        }
+      }
+    }
+  });
+}
+
+/* ============================================================
+   CONSULTOR DE GASTOS — gastos por categoria (pizza)
+============================================================ */
+function renderCategoryPie(){
+  const monthKey = currentMonthKey();
+  document.getElementById('pie-month-label').textContent = monthKeyLabel(monthKey);
+  const canvas = document.getElementById('category-pie-chart');
+  const emptyMsg = document.getElementById('category-pie-empty');
+  if (typeof Chart === 'undefined') return;
+
+  const totals = {};
+  state.gastos.expenses.filter(e => isActiveInMonth(e, monthKey)).forEach(e => {
+    totals[e.category] = (totals[e.category] || 0) + (Number(e.amount) || 0);
+  });
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+
+  if (categoryPieChart) categoryPieChart.destroy();
+
+  if (labels.length === 0){
+    canvas.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  emptyMsg.style.display = 'none';
+
+  const colors = labels.map((_, i) => PALETTE[i % PALETTE.length]);
+  const total = data.reduce((s, v) => s + v, 0);
+
+  categoryPieChart = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#FFFFFF', borderWidth: 2 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#6E6B85', font: { family: 'Inter', size: 11.5 }, boxWidth: 10 } },
+        tooltip: {
+          backgroundColor: '#1E1B2E',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: (item) => {
+              const pct = total > 0 ? (item.raw / total * 100).toFixed(1).replace('.', ',') : '0';
+              return item.label + ': ' + fmtBRL(item.raw) + ' (' + pct + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+document.getElementById('daily-month-select').addEventListener('change', renderDailyFlowChart);
+
+/* ============================================================
    CONSULTOR DE GASTOS — render geral
 ============================================================ */
 function renderGastos(){
   renderGastosStatus();
+  populateDailyMonthSelect();
+  renderDailyFlowChart();
   renderGastosProjection();
+  renderCategoryPie();
   renderGastosList('income');
   renderGastosList('expense');
   populateCategorySelect(document.getElementById('income-form-category'), 'income');
