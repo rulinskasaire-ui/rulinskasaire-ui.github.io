@@ -394,6 +394,13 @@
     </div>
   </div>
 
+  <!-- INSIGHTS TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker-track" id="gastos-ticker-track">
+      <span>Cadastre entradas e saídas para ver insights automáticos aqui.</span>
+    </div>
+  </div>
+
   <!-- DAILY FLOW -->
   <div class="panel">
     <div class="table-toolbar">
@@ -409,7 +416,7 @@
   <!-- PROJECTION -->
   <div class="panel">
     <h2>Projeção dos próximos meses</h2>
-    <p class="panel-sub">Saldo estimado (entradas − saídas) considerando recorrências e prazos de término.</p>
+    <p class="panel-sub">Barras: resultado de cada mês isolado (mesmo critério do semáforo). Linha: saldo acumulado, somando os meses anteriores.</p>
     <div class="chart-box"><canvas id="projection-chart"></canvas></div>
   </div>
 
@@ -511,7 +518,10 @@
         </div>
         <div class="gastos-field" id="expense-form-end-wrap" style="display:none;">
           <label class="field-label">Último mês em que pago essa conta</label>
-          <input type="month" id="expense-form-end" class="login-input">
+          <div style="display:flex; gap:8px;">
+            <select id="expense-form-end-month" class="login-input"></select>
+            <select id="expense-form-end-year" class="login-input"></select>
+          </div>
         </div>
       </div>
       <div class="gastos-form-actions">
@@ -607,6 +617,38 @@ if (typeof Chart !== 'undefined'){
           ctx.restore();
         }
       });
+    }
+  });
+
+  /* Plugin: desenha uma linha vertical marcando o dia atual no gráfico de
+     fluxo diário, com o gasto acumulado e a sobra de entradas até hoje. */
+  Chart.register({
+    id: 'todayMarkerPlugin',
+    afterDatasetsDraw(chart){
+      if (chart.canvas.id !== 'daily-flow-chart') return;
+      const opts = chart.options.plugins && chart.options.plugins.todayMarker;
+      if (!opts || !opts.show) return;
+      const meta = chart.getDatasetMeta(0);
+      const point = meta.data[opts.dayIndex];
+      if (!point) return;
+      const { ctx, chartArea } = chart;
+      const clampedX = Math.min(Math.max(point.x, chartArea.left + 55), chartArea.right - 55);
+      ctx.save();
+      ctx.strokeStyle = '#7A17D6';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(point.x, chartArea.top);
+      ctx.lineTo(point.x, chartArea.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '700 10.5px Inter, sans-serif';
+      ctx.fillStyle = '#7A17D6';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('Hoje · gasto ' + fmtBRL(opts.cumExpense), clampedX, chartArea.top - 20);
+      ctx.fillText('sobra ' + fmtBRL(opts.balance), clampedX, chartArea.top - 6);
+      ctx.restore();
     }
   });
 }
@@ -1312,6 +1354,40 @@ handleCategorySelectChange(document.getElementById('income-form-category'), 'inc
 handleCategorySelectChange(document.getElementById('expense-form-category'), 'expense');
 
 /* ============================================================
+   CONSULTOR DE GASTOS — seletores mês/ano (data de término de Saídas)
+============================================================ */
+function populateExpenseEndSelectors(selectedMonthKey){
+  const monthSel = document.getElementById('expense-form-end-month');
+  const yearSel = document.getElementById('expense-form-end-year');
+  if (!monthSel.dataset.populated){
+    monthSel.innerHTML = MONTH_NAMES.map((name, i) => `<option value="${String(i + 1).padStart(2, '0')}">${name}</option>`).join('');
+    monthSel.dataset.populated = '1';
+  }
+  if (!yearSel.dataset.populated){
+    const nowY = new Date().getFullYear();
+    const years = [];
+    for (let y = nowY - 1; y <= nowY + 6; y++) years.push(y);
+    yearSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    yearSel.dataset.populated = '1';
+  }
+  if (selectedMonthKey){
+    const [y, m] = selectedMonthKey.split('-');
+    monthSel.value = m;
+    yearSel.value = y;
+  } else {
+    const now = new Date();
+    monthSel.value = String(now.getMonth() + 1).padStart(2, '0');
+    yearSel.value = String(now.getFullYear());
+  }
+}
+function readExpenseEndSelectors(){
+  const m = document.getElementById('expense-form-end-month').value;
+  const y = document.getElementById('expense-form-end-year').value;
+  return y + '-' + m;
+}
+populateExpenseEndSelectors();
+
+/* ============================================================
    CONSULTOR DE GASTOS — toggle campo de prazo
 ============================================================ */
 function wireRecurringToggle(prefix){
@@ -1319,6 +1395,7 @@ function wireRecurringToggle(prefix){
   const endWrap = document.getElementById(prefix + '-form-end-wrap');
   recurringSel.addEventListener('change', () => {
     endWrap.style.display = recurringSel.value === 'false' ? 'block' : 'none';
+    if (prefix === 'expense' && recurringSel.value === 'false') populateExpenseEndSelectors();
   });
 }
 wireRecurringToggle('income');
@@ -1334,6 +1411,7 @@ function resetGastosForm(prefix){
   document.getElementById(prefix + '-form-submit').textContent = prefix === 'income' ? 'Adicionar entrada' : 'Adicionar saída';
   document.getElementById(prefix + '-form-cancel').style.display = 'none';
   populateCategorySelect(document.getElementById(prefix + '-form-category'), prefix);
+  if (prefix === 'expense') populateExpenseEndSelectors();
   if (prefix === 'income') editingIncomeId = null; else editingExpenseId = null;
 }
 
@@ -1346,7 +1424,7 @@ function wireGastosForm(prefix){
     const amount = parseFloat(document.getElementById(prefix + '-form-amount').value);
     const day = document.getElementById(prefix + '-form-day').value ? parseInt(document.getElementById(prefix + '-form-day').value, 10) : null;
     const recurring = document.getElementById(prefix + '-form-recurring').value === 'true';
-    const endDate = recurring ? null : (document.getElementById(prefix + '-form-end').value || null);
+    const endDate = recurring ? null : (prefix === 'expense' ? readExpenseEndSelectors() : (document.getElementById('income-form-end').value || null));
     if (!name || isNaN(amount) || amount < 0 || category === '__new__') return;
 
     const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
@@ -1377,7 +1455,11 @@ function editGastosEntry(prefix, id){
   document.getElementById(prefix + '-form-day').value = entry.day || '';
   document.getElementById(prefix + '-form-recurring').value = entry.recurring ? 'true' : 'false';
   document.getElementById(prefix + '-form-end-wrap').style.display = entry.recurring ? 'none' : 'block';
-  document.getElementById(prefix + '-form-end').value = entry.endDate || '';
+  if (prefix === 'expense'){
+    populateExpenseEndSelectors(entry.endDate);
+  } else {
+    document.getElementById('income-form-end').value = entry.endDate || '';
+  }
   document.getElementById(prefix + '-form-submit').textContent = 'Salvar alterações';
   document.getElementById(prefix + '-form-cancel').style.display = 'inline-block';
   if (prefix === 'income') editingIncomeId = id; else editingExpenseId = id;
@@ -1457,20 +1539,22 @@ function renderGastosProjection(){
   const labels = keys.map(monthKeyLabel);
   const saldos = keys.map(k => computeMonthTotals(k).saldo);
   const colors = saldos.map(s => statusColor(statusForSaldo(s)));
+  let running = 0;
+  const cumulative = saldos.map(s => (running += s));
+  const base = chartOptions('currency');
 
   if (gastosProjectionChart) gastosProjectionChart.destroy();
   gastosProjectionChart = new Chart(ctx, {
-    type: 'bar',
     data: {
       labels,
-      datasets: [{ label: 'Saldo projetado', data: saldos, backgroundColor: colors, borderRadius: 6 }]
+      datasets: [
+        { type: 'bar', label: 'Resultado do mês', data: saldos, backgroundColor: colors, borderRadius: 6, order: 2 },
+        { type: 'line', label: 'Saldo acumulado', data: cumulative, borderColor: '#1E1B2E', backgroundColor: '#1E1B2E', borderWidth: 2.5, tension: 0.25, pointRadius: 3, fill: false, order: 1 }
+      ]
     },
     options: {
-      ...chartOptions('currency'),
-      plugins: {
-        ...chartOptions('currency').plugins,
-        legend: { display: false }
-      }
+      ...base,
+      plugins: { ...base.plugins, legend: { display: true, labels: base.plugins.legend.labels } }
     }
   });
 }
@@ -1515,6 +1599,16 @@ function renderDailyFlowChart(){
   const barColors = balances.map(b => statusColor(statusForSaldo(b)));
   const base = chartOptions('currency');
 
+  const isCurrentMonth = monthKey === currentMonthKey();
+  const todayDayNum = new Date().getDate();
+  const todayIndex = todayDayNum - 1;
+  const todayMarker = {
+    show: isCurrentMonth && todayIndex >= 0 && todayIndex < days.length,
+    dayIndex: todayIndex,
+    cumExpense: cumExpenses[todayIndex] || 0,
+    balance: balances[todayIndex] || 0
+  };
+
   if (dailyFlowChart) dailyFlowChart.destroy();
   dailyFlowChart = new Chart(ctx, {
     data: {
@@ -1526,6 +1620,11 @@ function renderDailyFlowChart(){
     },
     options: {
       ...base,
+      layout: { padding: { top: todayMarker.show ? 40 : 26 } },
+      plugins: {
+        ...base.plugins,
+        todayMarker
+      },
       scales: {
         ...base.scales,
         x: {
@@ -1595,10 +1694,72 @@ function renderCategoryPie(){
 document.getElementById('daily-month-select').addEventListener('change', renderDailyFlowChart);
 
 /* ============================================================
+   CONSULTOR DE GASTOS — insights (ticker cruzando com Investimentos)
+============================================================ */
+function getBestPerformingInvestment(){
+  if (!state.months || state.months.length < 2) return null;
+  const last = state.months[state.months.length - 1];
+  const prev = state.months[state.months.length - 2];
+  let best = null;
+  state.investments.forEach(inv => {
+    const g = growthBetween(Number(last.values[inv.id]) || 0, Number(prev.values[inv.id]) || 0);
+    if (g !== null && (best === null || g > best.g)) best = { name: inv.name, g };
+  });
+  return best;
+}
+
+function renderGastosTicker(){
+  const track = document.getElementById('gastos-ticker-track');
+  const messages = [];
+
+  if (state.gastos.incomes.length === 0 && state.gastos.expenses.length === 0){
+    track.innerHTML = '<span>Cadastre entradas e saídas para ver insights automáticos aqui.</span>';
+    return;
+  }
+
+  const keys = getMonthKeys(PROJECTION_MONTHS);
+  const monthly = keys.map(k => ({ key: k, ...computeMonthTotals(k) }));
+
+  /* alertas de meses com risco (resultado isolado do mês, mesmo critério do semáforo) */
+  monthly.forEach(m => {
+    const status = statusForSaldo(m.saldo);
+    if (status === 'red'){
+      messages.push('🔴 Cuidado com os gastos em ' + monthKeyLabel(m.key) + ': saldo previsto de ' + fmtBRL(m.saldo) + '.');
+    } else if (status === 'yellow'){
+      messages.push('🟡 Fique de olho em ' + monthKeyLabel(m.key) + ': sobra apertada de ' + fmtBRL(m.saldo) + '.');
+    }
+  });
+
+  /* sugestão de investimento com base no saldo acumulado projetado */
+  const best = getBestPerformingInvestment();
+  let running = 0;
+  let suggested = false;
+  for (let i = 0; i < monthly.length; i++){
+    running += monthly[i].saldo;
+    if (!suggested && best && running >= GREEN_THRESHOLD * 2){
+      const amount = Math.round(running - GREEN_THRESHOLD);
+      messages.push('💡 Em ' + monthKeyLabel(monthly[i].key) + ' seu acumulado projetado chega a ' + fmtBRL(running) + ' — considere investir cerca de ' + fmtBRL(amount) + ' em ' + best.name + ', que vem performando melhor na aba Investimentos.');
+      suggested = true;
+    }
+  }
+  if (!best && messages.length < 3){
+    messages.push('ℹ️ Cadastre pelo menos 2 meses de investimentos para receber sugestões de aporte aqui.');
+  }
+
+  if (messages.length === 0){
+    messages.push('✅ Nenhum alerta nos próximos ' + PROJECTION_MONTHS + ' meses — suas contas estão sob controle.');
+  }
+
+  const build = () => messages.map(m => `<span>${m}</span>`).join('<span class="sep">&nbsp;&nbsp;•&nbsp;&nbsp;</span>');
+  track.innerHTML = build() + '<span class="sep">&nbsp;&nbsp;•&nbsp;&nbsp;</span>' + build();
+}
+
+/* ============================================================
    CONSULTOR DE GASTOS — render geral
 ============================================================ */
 function renderGastos(){
   renderGastosStatus();
+  renderGastosTicker();
   populateDailyMonthSelect();
   renderDailyFlowChart();
   renderGastosProjection();
