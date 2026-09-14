@@ -22,6 +22,13 @@
   --radius: 10px;
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
+
+  --status-concluido-bg: #E4F5EC;
+  --status-concluido-text: #14602F;
+  --status-atrasado-bg: #FBE7E7;
+  --status-atrasado-text: #8A1F1F;
+  --status-andamento-bg: transparent;
+  --status-andamento-text: #15182B;
 }
 
 *{ box-sizing: border-box; }
@@ -111,6 +118,7 @@ button{ font-family: var(--font-body); }
   color: #fff;
 }
 .btn-primary:hover{ opacity: .88; }
+.btn-primary:disabled{ opacity: .45; cursor: not-allowed; }
 
 .btn-ghost{
   background: var(--panel);
@@ -118,6 +126,7 @@ button{ font-family: var(--font-body); }
   border-color: var(--line);
 }
 .btn-ghost:hover{ border-color: var(--accent); }
+.btn-ghost:disabled{ opacity: .45; cursor: not-allowed; }
 
 .btn-danger{
   background: #fff;
@@ -125,35 +134,6 @@ button{ font-family: var(--font-body); }
   border-color: #EFC9C9;
 }
 .btn-danger:hover{ background: #FBEEEE; }
-
-.dropdown{ position: relative; }
-.caret{ font-size: 10px; margin-left: 2px; }
-.dropdown-menu{
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(21,24,43,0.12);
-  min-width: 170px;
-  padding: 6px;
-  z-index: 50;
-}
-.dropdown-menu.hidden{ display:none; }
-.dropdown-menu button{
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 9px 10px;
-  border-radius: 6px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--ink);
-  cursor: pointer;
-}
-.dropdown-menu button:hover{ background: var(--accent-soft); }
 
 /* ============ Filters ============ */
 .filter-row{
@@ -188,36 +168,6 @@ button{ font-family: var(--font-body); }
   border-color: currentColor;
   background: var(--accent-soft);
 }
-
-/* ============ Postponed panel ============ */
-.postponed-panel{
-  background: #F8F5FD;
-  border: 1px solid #E4D8F7;
-  border-radius: var(--radius);
-  padding: 14px 18px;
-  margin-bottom: 28px;
-}
-.postponed-panel.hidden{ display:none; }
-.postponed-panel h3{
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 8px;
-  color: #6B3FA0;
-}
-.postponed-panel ul{
-  margin: 0;
-  padding-left: 18px;
-  columns: 2;
-  column-gap: 28px;
-}
-.postponed-panel li{
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin-bottom: 4px;
-  break-inside: avoid;
-}
-.postponed-panel li strong{ color: var(--ink); font-weight: 600; }
 
 /* ============ Sections ============ */
 .board-section{ margin-bottom: 52px; }
@@ -289,9 +239,6 @@ button{ font-family: var(--font-body); }
 .quarter-cards{
   position: relative;
   z-index: 1;
-  display:flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .quarter-empty{
@@ -302,83 +249,8 @@ button{ font-family: var(--font-body); }
   padding: 10px 0;
 }
 
-/* Product card (shared look for grid + timeline) */
-.product-card{
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-left-width: 4px;
-  border-radius: 8px;
-  padding: 12px 12px 12px 13px;
-  cursor: pointer;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-.product-card:hover{
-  box-shadow: 0 2px 10px rgba(21,24,43,0.08);
-}
-
-.product-card .pname{
-  font-weight: 600;
-  font-size: 14px;
-  margin: 0 0 4px;
-}
-.product-card .pmeta{
-  display:flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--ink-soft);
-  margin-bottom: 6px;
-  flex-wrap: wrap;
-}
-.product-card .pdesc{
-  font-size: 12.5px;
-  color: var(--ink-soft);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.status-badge{
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  white-space: nowrap;
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-}
-.status-badge::before{
-  content:'';
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background: currentColor;
-  flex-shrink:0;
-}
-.status-planejado{ background: #E7F0FD; color: #2F6FED; }
-.status-andamento{ background: #FCF2DD; color: #B8860F; }
-.status-concluido{ background: #E4F5EC; color: #1D9A5B; }
-.status-atrasado{ background: #FBEAEA; color: #D6433B; }
-.status-cancelado{ background: #EAEBEF; color: #3A3F55; }
-.status-adiado{ background: #F1EAFB; color: #8E5AC8; }
-
-/* solid status colors, shared by timeline markers and list dots */
-.clr-planejado{ background: #2F6FED; }
-.clr-andamento{ background: #E0A72D; }
-.clr-concluido{ background: #1D9A5B; }
-.clr-atrasado{ background: #D6433B; }
-.clr-cancelado{ background: #3A3F55; }
-.clr-adiado{ background: #8E5AC8; }
-
-.status-dot{
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-/* month-grouped launch rows inside a quarter column */
-.month-group{ margin-bottom: 14px; }
+/* month grouping */
+.month-group{ position: relative; z-index: 1; margin-bottom: 14px; }
 .month-group:last-child{ margin-bottom: 0; }
 .month-name{
   font-size: 12px;
@@ -386,121 +258,52 @@ button{ font-family: var(--font-body); }
   color: var(--ink-soft);
   margin: 0 0 6px;
 }
-.launch-row{
-  display:flex;
-  align-items:center;
-  gap: 8px;
-  padding: 5px 6px;
-  margin: 0 -6px;
-  border-radius: 6px;
+
+/* ============ Launch box ============ */
+.launch-box{
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-bottom: 8px;
   cursor: pointer;
-  transition: background .12s ease;
+  transition: box-shadow .12s ease;
 }
-.launch-row:hover{ background: var(--accent-soft); }
-.launch-name{
+.launch-box:last-child{ margin-bottom: 0; }
+.launch-box:hover{ box-shadow: 0 2px 8px rgba(21,24,43,0.1); }
+
+.launch-box.status-concluido{ background: var(--status-concluido-bg); }
+.launch-box.status-atrasado{ background: var(--status-atrasado-bg); }
+.launch-box.status-andamento{ background: var(--status-andamento-bg); }
+
+.launch-box .lb-name{
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
+  margin: 0 0 5px;
   line-height: 1.3;
 }
+.status-concluido .lb-name{ color: var(--status-concluido-text); }
+.status-atrasado .lb-name{ color: var(--status-atrasado-text); }
+.status-andamento .lb-name{ color: var(--status-andamento-text); }
 
-/* ============ Timeline ============ */
-.timeline{
-  background: var(--panel);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius);
-  padding: 28px 28px 22px;
-  overflow-x: auto;
-}
-
-.timeline-inner{
-  position: relative;
-  min-width: 900px;
-  padding: 76px 0 40px;
-}
-
-.timeline-lanes{
-  position: relative;
-  height: 0;
-}
-
-.timeline-bar{
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 10px;
-  border-radius: 999px;
-  background: #E4E6EC;
-  transform: translateY(-50%);
-}
-
-.timeline-qdivider{
-  position: absolute;
-  top: -18px;
-  bottom: -28px;
-  width: 0;
-  border-left: 1px dashed var(--line);
-}
-
-.timeline-qlabel{
-  position: absolute;
-  top: 22px;
-  transform: translateX(-50%);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-.timeline-pin{
-  position: absolute;
-  top: 0;
-  z-index: 1;
-  cursor: pointer;
-}
-.timeline-marker{
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform: translate(-50%, -50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  color: #fff;
+.launch-box .lb-meta{
   font-size: 11px;
-  font-weight: 700;
   display:flex;
   align-items:center;
-  justify-content:center;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px var(--line);
+  gap: 5px;
+  margin-bottom: 2px;
 }
-.timeline-label{
-  position: absolute;
-  top: -34px;
-  left: 0;
-  transform: translateX(-50%);
-  width: 100px;
-  text-align: center;
+.launch-box .lb-desc{
   font-size: 11px;
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--ink);
+  margin: 0;
 }
-.timeline-pin.row-1 .timeline-label{ top: -62px; }
-.timeline-stem{
-  position: absolute;
-  top: -34px;
-  left: 0;
-  width: 1px;
-  height: 20px;
-  background: var(--line);
-  transform: translateX(-50%);
-}
+.status-concluido .lb-meta, .status-concluido .lb-desc{ color: var(--status-concluido-text); opacity: .85; }
+.status-atrasado .lb-meta, .status-atrasado .lb-desc{ color: var(--status-atrasado-text); opacity: .85; }
+.status-andamento .lb-meta, .status-andamento .lb-desc{ color: var(--ink-soft); }
 
-.timeline-empty{
-  font-size: 13px;
-  color: var(--ink-soft);
-  padding: 20px 0 6px;
+.lb-icon{
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 /* ============ Footer ============ */
@@ -577,6 +380,30 @@ button{ font-family: var(--font-body); }
 .modal-actions-right{ display:flex; gap: 10px; }
 .hidden{ display:none !important; }
 
+/* View (image preview) modal */
+.view-modal{ max-width: 720px; }
+.view-image-wrap{
+  background: var(--bg);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  margin-bottom: 4px;
+}
+.view-loading{
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.view-image-wrap img{
+  max-width: 100%;
+  border-radius: 4px;
+  display: block;
+}
+
 /* ============ Toast ============ */
 .toast{
   position: fixed;
@@ -629,25 +456,14 @@ button{ font-family: var(--font-body); }
       <button id="importBtn" class="btn-ghost">Importar dados</button>
       <input type="file" id="importFile" accept="application/json" hidden>
       <button id="exportBtn" class="btn-ghost">Exportar dados</button>
-      <div class="dropdown">
-        <button id="viewMenuBtn" class="btn-ghost">Visão <span class="caret">▾</span></button>
-        <div id="viewMenu" class="dropdown-menu hidden">
-          <button id="generatePptBtn" type="button">Gerar PPT</button>
-        </div>
-      </div>
+      <button id="viewBtn" class="btn-ghost">Visão</button>
       <button id="addBtn" class="btn-primary">Novo lançamento</button>
     </div>
   </header>
 
   <div id="categoryFilters" class="filter-row" aria-label="Filtrar por categoria"></div>
 
-  <section id="postponedPanel" class="postponed-panel hidden">
-    <h3>Lançamentos adiados</h3>
-    <ul id="postponedList"></ul>
-  </section>
-
   <main>
-
     <section class="board-section">
       <div class="section-heading">
         <h2>Visão por trimestre</h2>
@@ -655,15 +471,6 @@ button{ font-family: var(--font-body); }
       </div>
       <div id="gridView" class="quarter-grid"></div>
     </section>
-
-    <section class="board-section">
-      <div class="section-heading">
-        <h2>Linha do tempo</h2>
-        <span id="timelineCount" class="section-count"></span>
-      </div>
-      <div id="timelineView" class="timeline"></div>
-    </section>
-
   </main>
 
   <footer class="app-footer">
@@ -698,24 +505,21 @@ button{ font-family: var(--font-body); }
       <label class="field">
         <span>Status</span>
         <select id="f-status">
-          <option value="planejado">Planejado</option>
           <option value="andamento">Em andamento</option>
           <option value="concluido">Concluído</option>
-          <option value="atrasado">Atrasado</option>
-          <option value="cancelado">Cancelado</option>
-          <option value="adiado">Adiado</option>
+          <option value="atrasado">Em atraso</option>
         </select>
       </label>
 
       <label class="field">
         <span>Responsável</span>
-        <input id="f-owner" type="text" maxlength="60" placeholder="Ex: Time de Produto">
+        <input id="f-owner" type="text" maxlength="60" placeholder="Ex: João">
       </label>
     </div>
 
     <label class="field">
       <span>Descrição curta</span>
-      <textarea id="f-desc" maxlength="180" rows="3" placeholder="Uma frase sobre o lançamento"></textarea>
+      <textarea id="f-desc" maxlength="180" rows="3" placeholder="Ex: Web launch"></textarea>
     </label>
 
     <div class="modal-actions">
@@ -728,50 +532,55 @@ button{ font-family: var(--font-body); }
   </form>
 </div>
 
+<div id="viewModalOverlay" class="modal-overlay hidden">
+  <div class="modal view-modal">
+    <h2>Visão de <span id="viewModalYear"></span></h2>
+    <div id="viewImageWrap" class="view-image-wrap">
+      <p id="viewLoading" class="view-loading">Gerando imagem...</p>
+      <img id="viewImage" alt="Imagem da visão por trimestre" class="hidden">
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="downloadImageBtn" class="btn-ghost" disabled>Baixar imagem</button>
+      <div class="modal-actions-right">
+        <button type="button" id="closeViewBtn" class="btn-ghost">Fechar</button>
+        <button type="button" id="generatePptBtn" class="btn-primary" disabled>Gerar PPT</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast hidden"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script>
 (function () {
   'use strict';
 
   /* ============ Constants ============ */
-  const STORAGE_KEY = 'launchRoadmap_v1';
+  const STORAGE_KEY = 'launchRoadmap_v2';
 
   const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const MONTHS_SHORT_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   const STATUS_LABELS = {
-    planejado: 'Planejado',
     andamento: 'Em andamento',
     concluido: 'Concluído',
-    atrasado: 'Atrasado',
-    cancelado: 'Cancelado',
-    adiado: 'Adiado'
+    atrasado: 'Em atraso'
   };
-  const STATUS_ORDER = ['planejado', 'andamento', 'concluido', 'atrasado', 'cancelado', 'adiado'];
-  const STATUS_HEX = {
-    planejado: '2F6FED',
-    andamento: 'E0A72D',
-    concluido: '1D9A5B',
-    atrasado: 'D6433B',
-    cancelado: '3A3F55',
-    adiado: '8E5AC8'
+  const STATUS_ORDER = ['concluido', 'atrasado', 'andamento'];
+  const STATUS_HEX_FILL = {
+    concluido: 'E4F5EC',
+    atrasado: 'FBE7E7',
+    andamento: 'FFFFFF'
+  };
+  const STATUS_HEX_TEXT = {
+    concluido: '14602F',
+    atrasado: '8A1F1F',
+    andamento: '15182B'
   };
 
   const CATEGORY_PALETTE = ['#2F6FED', '#14A085', '#D64550', '#F2A93B', '#7C5CFC', '#2CA6C7', '#6B8F3C', '#C2477B'];
-
-  // Fallback seed data, used if data.json can't be fetched (e.g. the file was opened
-  // directly instead of through a web server/GitHub Pages, which blocks local fetch()).
-  const FALLBACK_SEED = {
-    categoryColors: { 'Software': '#2F6FED', 'Hardware': '#14A085', 'Serviços': '#D64550' },
-    products: [
-      { id: 'seed-1', name: 'Vision Tools Portfolio', category: 'Software', date: '2026-02-10', status: 'concluido', owner: 'Equipe de Marketing', description: 'Exemplo de lançamento concluído. Clique no card para editar ou excluir.' },
-      { id: 'seed-2', name: 'REVO 11K/16000', category: 'Hardware', date: '2026-08-14', status: 'andamento', owner: 'Equipe de Produto', description: 'Exemplo em andamento, no terceiro trimestre.' },
-      { id: 'seed-3', name: 'STP Tensor Pulse', category: 'Serviços', date: '2026-12-03', status: 'adiado', owner: 'Equipe Comercial', description: 'Exemplo de lançamento adiado. Aparece automaticamente no painel de destaque.' },
-      { id: 'seed-4', name: 'SWS Nova Bomba', category: 'Hardware', date: '2026-06-20', status: 'atrasado', owner: 'Equipe de Produto', description: 'Exemplo com status atrasado.' }
-    ]
-  };
 
   const QUARTERS = [
     { num: '01', label: 'Q1', months: [0, 1, 2] },
@@ -779,6 +588,16 @@ button{ font-family: var(--font-body); }
     { num: '03', label: 'Q3', months: [6, 7, 8] },
     { num: '04', label: 'Q4', months: [9, 10, 11] }
   ];
+
+  const FALLBACK_SEED = {
+    categoryColors: { 'Software': '#2F6FED', 'Hardware': '#14A085', 'Serviços': '#D64550' },
+    products: [
+      { id: 'seed-1', name: 'Vision Tools Portfolio', category: 'Software', date: '2026-02-10', status: 'concluido', owner: 'João', description: 'Web launch' },
+      { id: 'seed-2', name: 'REVO 11K/16000', category: 'Hardware', date: '2026-08-14', status: 'andamento', owner: 'João', description: 'Web launch' },
+      { id: 'seed-3', name: 'STP Tensor Pulse', category: 'Serviços', date: '2026-12-03', status: 'andamento', owner: 'João', description: 'Web launch' },
+      { id: 'seed-4', name: 'SWS Nova Bomba', category: 'Hardware', date: '2026-06-20', status: 'atrasado', owner: 'João', description: 'Web launch' }
+    ]
+  };
 
   /* ============ State ============ */
   let state = {
@@ -793,18 +612,22 @@ button{ font-family: var(--font-body); }
   const $ = (id) => document.getElementById(id);
   const yearLabel = $('yearLabel');
   const categoryFilters = $('categoryFilters');
-  const postponedPanel = $('postponedPanel');
-  const postponedList = $('postponedList');
   const gridView = $('gridView');
   const gridCount = $('gridCount');
-  const timelineView = $('timelineView');
-  const timelineCount = $('timelineCount');
   const modalOverlay = $('modalOverlay');
   const productForm = $('productForm');
   const modalTitle = $('modalTitle');
   const deleteBtn = $('deleteBtn');
   const categoryList = $('categoryList');
   const toast = $('toast');
+
+  const viewModalOverlay = $('viewModalOverlay');
+  const viewModalYear = $('viewModalYear');
+  const viewImageWrap = $('viewImageWrap');
+  const viewLoading = $('viewLoading');
+  const viewImage = $('viewImage');
+  const downloadImageBtn = $('downloadImageBtn');
+  const generatePptBtn = $('generatePptBtn');
 
   /* ============ Init ============ */
   async function init() {
@@ -864,17 +687,8 @@ button{ font-family: var(--font-body); }
     return all.filter((p) => activeCategoryFilters.has(p.category));
   }
 
-  function formatDate(dateStr) {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.getDate() + ' ' + MONTHS_SHORT_PT[d.getMonth()];
-  }
-
-  function dayOfYearPct(dateStr) {
-    const d = new Date(dateStr + 'T00:00:00');
-    const start = new Date(d.getFullYear(), 0, 1);
-    const diff = (d - start) / 86400000;
-    const totalDays = (new Date(d.getFullYear(), 11, 31) - start) / 86400000 + 1;
-    return (diff / totalDays) * 100;
+  function normalizedStatus(s) {
+    return STATUS_LABELS[s] ? s : 'andamento';
   }
 
   function showToast(msg) {
@@ -884,13 +698,15 @@ button{ font-family: var(--font-body); }
     showToast._t = setTimeout(() => toast.classList.add('hidden'), 2600);
   }
 
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
   /* ============ Render orchestration ============ */
   function renderAll() {
     yearLabel.textContent = state.year;
     renderFilters();
-    renderPostponedPanel();
     renderGrid();
-    renderTimeline();
   }
 
   /* ============ Filters ============ */
@@ -909,24 +725,9 @@ button{ font-family: var(--font-body); }
         else activeCategoryFilters.add(cat);
         renderFilters();
         renderGrid();
-        renderTimeline();
       });
       categoryFilters.appendChild(chip);
     });
-  }
-
-  /* ============ Postponed panel ============ */
-  function renderPostponedPanel() {
-    const postponed = productsInYear(state.year).filter((p) => p.status === 'adiado');
-    if (postponed.length === 0) {
-      postponedPanel.classList.add('hidden');
-      postponedList.innerHTML = '';
-      return;
-    }
-    postponedPanel.classList.remove('hidden');
-    postponedList.innerHTML = postponed
-      .map((p) => `<li><strong>${escapeHtml(p.name)}</strong> — ${escapeHtml(p.category)}</li>`)
-      .join('');
   }
 
   /* ============ Grid (by quarter, grouped by month) ============ */
@@ -967,7 +768,7 @@ button{ font-family: var(--font-body); }
           h4.className = 'month-name';
           h4.textContent = MONTHS_PT[m];
           group.appendChild(h4);
-          monthItems.forEach((p) => group.appendChild(buildLaunchRow(p)));
+          monthItems.forEach((p) => group.appendChild(buildLaunchBox(p)));
           body.appendChild(group);
         });
         col.appendChild(body);
@@ -977,92 +778,32 @@ button{ font-family: var(--font-body); }
     });
   }
 
-  function buildLaunchRow(p) {
-    const row = document.createElement('div');
-    row.className = 'launch-row';
-    row.innerHTML = `<span class="status-dot clr-${p.status}"></span><span class="launch-name">${escapeHtml(p.name)}</span>`;
-    row.addEventListener('click', () => openModal(p));
-    return row;
-  }
+  function buildLaunchBox(p) {
+    const status = normalizedStatus(p.status);
+    const box = document.createElement('div');
+    box.className = `launch-box status-${status}`;
 
-  /* ============ Timeline ============ */
-  function renderTimeline() {
-    const items = filteredProducts(state.year).slice().sort((a, b) => a.date.localeCompare(b.date));
-    timelineCount.textContent = items.length + (items.length === 1 ? ' lançamento' : ' lançamentos');
-    timelineView.innerHTML = '';
+    const name = document.createElement('p');
+    name.className = 'lb-name';
+    name.textContent = p.name;
+    box.appendChild(name);
 
-    if (items.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'timeline-empty';
-      empty.textContent = 'Nenhum lançamento cadastrado para este ano ainda.';
-      timelineView.appendChild(empty);
-      return;
+    if (p.owner) {
+      const owner = document.createElement('div');
+      owner.className = 'lb-meta';
+      owner.innerHTML = `<svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg><span>${escapeHtml(p.owner)}</span>`;
+      box.appendChild(owner);
     }
 
-    const inner = document.createElement('div');
-    inner.className = 'timeline-inner';
+    if (p.description) {
+      const desc = document.createElement('p');
+      desc.className = 'lb-desc';
+      desc.textContent = p.description;
+      box.appendChild(desc);
+    }
 
-    const lanes = document.createElement('div');
-    lanes.className = 'timeline-lanes';
-
-    const bar = document.createElement('div');
-    bar.className = 'timeline-bar';
-    lanes.appendChild(bar);
-
-    // Quarter dividers + labels (based on real day-of-year boundaries)
-    const isLeap = (state.year % 4 === 0 && state.year % 100 !== 0) || state.year % 400 === 0;
-    const totalDays = isLeap ? 366 : 365;
-    const qBoundaryDays = [0, 90, 181, 273, totalDays];
-    QUARTERS.forEach((q, i) => {
-      const startPct = (qBoundaryDays[i] / totalDays) * 100;
-      const endPct = (qBoundaryDays[i + 1] / totalDays) * 100;
-      if (i > 0) {
-        const div = document.createElement('div');
-        div.className = 'timeline-qdivider';
-        div.style.left = startPct + '%';
-        lanes.appendChild(div);
-      }
-      const lbl = document.createElement('span');
-      lbl.className = 'timeline-qlabel';
-      lbl.style.left = ((startPct + endPct) / 2) + '%';
-      lbl.textContent = q.label;
-      lanes.appendChild(lbl);
-    });
-
-    // Markers with simple collision avoidance (alternate row when close together)
-    let lastPct = -999;
-    items.forEach((p, idx) => {
-      const pct = dayOfYearPct(p.date);
-      const row = (pct - lastPct < 6) ? 1 : 0;
-      lastPct = pct;
-
-      const pin = document.createElement('div');
-      pin.className = 'timeline-pin' + (row === 1 ? ' row-1' : '');
-      pin.style.left = pct + '%';
-
-      if (row === 1) {
-        const stem = document.createElement('span');
-        stem.className = 'timeline-stem';
-        pin.appendChild(stem);
-      }
-
-      const label = document.createElement('span');
-      label.className = 'timeline-label';
-      label.textContent = p.name;
-      pin.appendChild(label);
-
-      const marker = document.createElement('span');
-      marker.className = `timeline-marker clr-${p.status}`;
-      marker.textContent = idx + 1;
-      marker.title = `${p.name} — ${formatDate(p.date)} (${STATUS_LABELS[p.status]})`;
-      pin.appendChild(marker);
-
-      pin.addEventListener('click', () => openModal(p));
-      lanes.appendChild(pin);
-    });
-
-    inner.appendChild(lanes);
-    timelineView.appendChild(inner);
+    box.addEventListener('click', () => openModal(p));
+    return box;
   }
 
   /* ============ Modal ============ */
@@ -1074,7 +815,7 @@ button{ font-family: var(--font-body); }
     $('f-name').value = product ? product.name : '';
     $('f-category').value = product ? product.category : '';
     $('f-date').value = product ? product.date : '';
-    $('f-status').value = product ? product.status : 'planejado';
+    $('f-status').value = product ? normalizedStatus(product.status) : 'andamento';
     $('f-owner').value = product ? (product.owner || '') : '';
     $('f-desc').value = product ? (product.description || '') : '';
 
@@ -1098,14 +839,14 @@ button{ font-family: var(--font-body); }
     const date = $('f-date').value;
     if (!name || !category || !date) return;
 
-    getCategoryColor(category); // ensure color assigned
+    getCategoryColor(category);
 
     const payload = {
       id: editingId || ('p-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)),
       name,
       category,
       date,
-      status: $('f-status').value,
+      status: normalizedStatus($('f-status').value),
       owner: $('f-owner').value.trim(),
       description: $('f-desc').value.trim()
     };
@@ -1117,7 +858,6 @@ button{ font-family: var(--font-body); }
       state.products.push(payload);
     }
 
-    // switch displayed year to match the new/edited item so the user sees it
     state.year = new Date(date + 'T00:00:00').getFullYear();
 
     save();
@@ -1176,6 +916,54 @@ button{ font-family: var(--font-body); }
     renderAll();
   }
 
+  /* ============ Visão: generate image + PPT modal ============ */
+  let lastImageDataUrl = null;
+
+  async function openViewModal() {
+    viewModalYear.textContent = state.year;
+    viewImage.classList.add('hidden');
+    viewLoading.classList.remove('hidden');
+    viewLoading.textContent = 'Gerando imagem...';
+    downloadImageBtn.disabled = true;
+    generatePptBtn.disabled = true;
+    lastImageDataUrl = null;
+    viewModalOverlay.classList.remove('hidden');
+
+    if (typeof html2canvas === 'undefined') {
+      viewLoading.textContent = 'Não foi possível carregar o gerador de imagem. Verifique sua conexão e tente novamente.';
+      return;
+    }
+
+    try {
+      const target = document.querySelector('.board-section');
+      const canvas = await html2canvas(target, {
+        backgroundColor: '#F3F4F7',
+        scale: 2,
+        useCORS: true
+      });
+      lastImageDataUrl = canvas.toDataURL('image/png');
+      viewImage.src = lastImageDataUrl;
+      viewImage.classList.remove('hidden');
+      viewLoading.classList.add('hidden');
+      downloadImageBtn.disabled = false;
+      generatePptBtn.disabled = false;
+    } catch (e) {
+      viewLoading.textContent = 'Não foi possível gerar a imagem.';
+    }
+  }
+
+  function closeViewModal() {
+    viewModalOverlay.classList.add('hidden');
+  }
+
+  function downloadImage() {
+    if (!lastImageDataUrl) return;
+    const a = document.createElement('a');
+    a.href = lastImageDataUrl;
+    a.download = `Visao-Lancamentos-${state.year}.png`;
+    a.click();
+  }
+
   /* ============ PPT generation ============ */
   function generatePpt() {
     if (typeof PptxGenJS === 'undefined') {
@@ -1190,88 +978,57 @@ button{ font-family: var(--font-body); }
     const slide = pptx.addSlide();
     slide.background = { color: 'FFFFFF' };
 
-    slide.addText('Product Launch', { x: 0.4, y: 0.28, w: 6, h: 0.6, fontFace: 'Arial', fontSize: 28, bold: true, color: '15182B' });
-    slide.addText(`Agenda ${state.year}`, { x: 0.4, y: 0.82, w: 4, h: 0.4, fontFace: 'Arial', fontSize: 16, color: '565B72' });
+    slide.addText('Product Launch', { x: 0.4, y: 0.3, w: 6, h: 0.6, fontFace: 'Arial', fontSize: 28, bold: true, color: '15182B' });
+    slide.addText(`Visão por trimestre — ${state.year}`, { x: 0.4, y: 0.85, w: 6, h: 0.4, fontFace: 'Arial', fontSize: 16, color: '565B72' });
 
-    // Postponed callout, top right
-    const postponed = items.filter((p) => p.status === 'adiado');
-    if (postponed.length) {
-      slide.addText('Lançamentos adiados:', { x: 9.6, y: 0.25, w: 3.3, h: 0.28, fontFace: 'Arial', fontSize: 11, bold: true, color: '8E5AC8' });
-      const bullets = postponed.map((p) => ({ text: p.name, options: { bullet: true, breakLine: true } }));
-      slide.addText(bullets, { x: 9.6, y: 0.55, w: 3.3, h: 1.1, fontFace: 'Arial', fontSize: 10, color: '3A3F55' });
-    }
-
-    // Quarter columns
-    const colW = 2.95, gap = 0.25, startX = 0.4, colY = 1.55, colH = 4.3;
+    const colW = 2.95, gap = 0.25, startX = 0.4, colY = 1.7, colH = 5.2;
     QUARTERS.forEach((q, i) => {
       const x = startX + i * (colW + gap);
       slide.addText(q.label, { x, y: colY, w: colW, h: 0.32, fontFace: 'Arial', fontSize: 15, bold: true, color: '15182B' });
       slide.addShape(pptx.ShapeType.line, { x, y: colY + 0.38, w: colW, h: 0, line: { color: 'DEE1EA', width: 1 } });
 
       const qItems = items.filter((p) => q.months.includes(new Date(p.date + 'T00:00:00').getMonth()));
-      const paragraphs = [];
-      q.months.forEach((m) => {
-        const monthItems = qItems.filter((p) => new Date(p.date + 'T00:00:00').getMonth() === m);
-        if (!monthItems.length) return;
-        paragraphs.push({ text: MONTHS_PT[m], options: { bold: true, breakLine: true, color: '15182B', fontSize: 11.5, paraSpaceBefore: 8 } });
-        monthItems.forEach((p) => {
-          paragraphs.push({
-            text: p.name,
-            options: { breakLine: true, fontSize: 10.5, color: STATUS_HEX[p.status], bullet: { code: '25CF' } }
+      let boxY = colY + 0.55;
+      const boxH = 0.62, boxGap = 0.12;
+
+      if (qItems.length === 0) {
+        slide.addText('Nenhum lançamento', { x, y: boxY, w: colW, h: 0.3, fontFace: 'Arial', fontSize: 10.5, italic: true, color: '9AA0B4' });
+      } else {
+        let lastMonth = -1;
+        qItems.forEach((p) => {
+          const m = new Date(p.date + 'T00:00:00').getMonth();
+          if (m !== lastMonth) {
+            slide.addText(MONTHS_PT[m], { x, y: boxY, w: colW, h: 0.24, fontFace: 'Arial', fontSize: 10.5, bold: true, color: '15182B' });
+            boxY += 0.26;
+            lastMonth = m;
+          }
+          const status = normalizedStatus(p.status);
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x, y: boxY, w: colW, h: boxH, rectRadius: 0.06,
+            fill: { color: STATUS_HEX_FILL[status] },
+            line: { color: '15182B', width: 1 }
           });
+          const lines = [{ text: p.name, options: { bold: true, breakLine: true, fontSize: 9.5, color: STATUS_HEX_TEXT[status] } }];
+          const subParts = [];
+          if (p.owner) subParts.push(p.owner);
+          if (p.description) subParts.push(p.description);
+          if (subParts.length) lines.push({ text: subParts.join(' — '), options: { fontSize: 8, color: STATUS_HEX_TEXT[status] } });
+          slide.addText(lines, { x: x + 0.08, y: boxY + 0.05, w: colW - 0.16, h: boxH - 0.1, fontFace: 'Arial', valign: 'top' });
+          boxY += boxH + boxGap;
         });
-      });
-      if (paragraphs.length === 0) {
-        paragraphs.push({ text: 'Nenhum lançamento', options: { fontSize: 10.5, italic: true, color: '9AA0B4' } });
       }
-      slide.addText(paragraphs, { x, y: colY + 0.5, w: colW, h: colH, fontFace: 'Arial', valign: 'top' });
     });
 
-    // Timeline bar
-    const barY = 6.55, barX = 0.4, barW = 12.5;
-    slide.addShape(pptx.ShapeType.roundRect, { x: barX, y: barY, w: barW, h: 0.1, fill: { color: 'E4E6EC' }, line: { type: 'none' }, rectRadius: 0.05 });
-    slide.addText('Linha do tempo', { x: barX, y: barY + 0.28, w: barW, h: 0.3, align: 'center', fontFace: 'Arial', fontSize: 12, bold: true, color: '565B72' });
-
-    const isLeap = (state.year % 4 === 0 && state.year % 100 !== 0) || state.year % 400 === 0;
-    const totalDays = isLeap ? 366 : 365;
-
-    items.forEach((p, idx) => {
-      const d = new Date(p.date + 'T00:00:00');
-      const start = new Date(d.getFullYear(), 0, 1);
-      const dayPct = ((d - start) / 86400000) / totalDays;
-      const cx = barX + dayPct * barW;
-      const size = 0.34;
-      slide.addShape(pptx.ShapeType.ellipse, {
-        x: cx - size / 2, y: barY - size / 2 + 0.05, w: size, h: size,
-        fill: { color: STATUS_HEX[p.status] }, line: { color: 'FFFFFF', width: 1.5 }
-      });
-      slide.addText(String(idx + 1), {
-        x: cx - size / 2, y: barY - size / 2 + 0.05, w: size, h: size,
-        align: 'center', valign: 'middle', fontFace: 'Arial', fontSize: 9, bold: true, color: 'FFFFFF'
-      });
-      const labelRow = idx % 2;
-      slide.addText(p.name, {
-        x: cx - 0.6, y: barY - 0.42 - (labelRow * 0.32), w: 1.2, h: 0.3,
-        align: 'center', fontFace: 'Arial', fontSize: 7.5, color: '15182B'
-      });
-    });
-
-    // Legend
-    let legY = barY + 0.55;
-    slide.addText('Legenda', { x: barX, y: legY, w: 2, h: 0.25, fontFace: 'Arial', fontSize: 9, bold: true, color: '565B72' });
+    let legY = 7.05;
+    slide.addText('Legenda', { x: 0.4, y: legY, w: 1.2, h: 0.22, fontFace: 'Arial', fontSize: 9, bold: true, color: '565B72' });
     STATUS_ORDER.forEach((s, i) => {
-      const lx = barX + 0.9 + i * 1.85;
-      slide.addShape(pptx.ShapeType.ellipse, { x: lx, y: legY + 0.02, w: 0.13, h: 0.13, fill: { color: STATUS_HEX[s] }, line: { type: 'none' } });
-      slide.addText(STATUS_LABELS[s], { x: lx + 0.2, y: legY - 0.03, w: 1.6, h: 0.22, fontFace: 'Arial', fontSize: 8.5, color: '3A3F55' });
+      const lx = 1.3 + i * 2.2;
+      slide.addShape(pptx.ShapeType.roundRect, { x: lx, y: legY + 0.01, w: 0.18, h: 0.18, rectRadius: 0.03, fill: { color: STATUS_HEX_FILL[s] }, line: { color: '15182B', width: 1 } });
+      slide.addText(STATUS_LABELS[s], { x: lx + 0.26, y: legY - 0.02, w: 1.8, h: 0.22, fontFace: 'Arial', fontSize: 9, color: '3A3F55' });
     });
 
     pptx.writeFile({ fileName: `Product-Launch-Agenda-${state.year}.pptx` });
     showToast('Gerando o arquivo PowerPoint...');
-  }
-
-  /* ============ Utils ============ */
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
   /* ============ Events ============ */
@@ -1282,7 +1039,11 @@ button{ font-family: var(--font-body); }
     $('addBtn').addEventListener('click', () => openModal(null));
     $('cancelBtn').addEventListener('click', closeModal);
     modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modalOverlay.classList.contains('hidden')) closeModal(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (!modalOverlay.classList.contains('hidden')) closeModal();
+      if (!viewModalOverlay.classList.contains('hidden')) closeViewModal();
+    });
 
     productForm.addEventListener('submit', handleSubmit);
     deleteBtn.addEventListener('click', handleDelete);
@@ -1294,17 +1055,11 @@ button{ font-family: var(--font-body); }
       e.target.value = '';
     });
 
-    const viewMenuBtn = $('viewMenuBtn');
-    const viewMenu = $('viewMenu');
-    viewMenuBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      viewMenu.classList.toggle('hidden');
-    });
-    document.addEventListener('click', () => viewMenu.classList.add('hidden'));
-    $('generatePptBtn').addEventListener('click', () => {
-      viewMenu.classList.add('hidden');
-      generatePpt();
-    });
+    $('viewBtn').addEventListener('click', openViewModal);
+    $('closeViewBtn').addEventListener('click', closeViewModal);
+    viewModalOverlay.addEventListener('click', (e) => { if (e.target === viewModalOverlay) closeViewModal(); });
+    downloadImageBtn.addEventListener('click', downloadImage);
+    generatePptBtn.addEventListener('click', generatePpt);
   }
 
   init();
