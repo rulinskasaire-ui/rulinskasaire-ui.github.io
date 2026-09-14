@@ -453,9 +453,9 @@ button{ font-family: var(--font-body); }
       <p class="subtitle">Lançamentos de produtos ao longo do ano</p>
     </div>
     <div class="topbar-actions">
-      <button id="importBtn" class="btn-ghost">Importar dados</button>
+      <button id="importBtn" class="btn-ghost" title="Carregar um arquivo de backup (.json) exportado anteriormente">Importar dados</button>
       <input type="file" id="importFile" accept="application/json" hidden>
-      <button id="exportBtn" class="btn-ghost">Exportar dados</button>
+      <button id="exportBtn" class="btn-ghost" title="Baixar um backup (.json) com todos os lançamentos">Exportar dados</button>
       <button id="viewBtn" class="btn-ghost">Visão</button>
       <button id="addBtn" class="btn-primary">Novo lançamento</button>
     </div>
@@ -562,11 +562,18 @@ button{ font-family: var(--font-body); }
 
   const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const MONTHS_SHORT_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const MONTHS_SHORT_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   const STATUS_LABELS = {
     andamento: 'Em andamento',
     concluido: 'Concluído',
     atrasado: 'Em atraso'
+  };
+  const STATUS_LABELS_EN = {
+    andamento: 'In progress',
+    concluido: 'Completed',
+    atrasado: 'Delayed'
   };
   const STATUS_ORDER = ['concluido', 'atrasado', 'andamento'];
   const STATUS_HEX_FILL = {
@@ -691,6 +698,12 @@ button{ font-family: var(--font-body); }
     return STATUS_LABELS[s] ? s : 'andamento';
   }
 
+  function formatDate(dateStr, lang) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const months = lang === 'en' ? MONTHS_SHORT_EN : MONTHS_SHORT_PT;
+    return `${d.getDate()} ${months[d.getMonth()]}`;
+  }
+
   function showToast(msg) {
     toast.textContent = msg;
     toast.classList.remove('hidden');
@@ -733,8 +746,16 @@ button{ font-family: var(--font-body); }
   /* ============ Grid (by quarter, grouped by month) ============ */
   function renderGrid() {
     const items = filteredProducts(state.year);
-    gridView.innerHTML = '';
     gridCount.textContent = items.length + (items.length === 1 ? ' lançamento' : ' lançamentos');
+    populateQuarterGrid(gridView, items, 'pt');
+  }
+
+  function populateQuarterGrid(container, items, lang) {
+    const months = lang === 'en' ? MONTHS_EN : MONTHS_PT;
+    const monthsShort = lang === 'en' ? MONTHS_SHORT_EN : MONTHS_SHORT_PT;
+    const emptyText = lang === 'en' ? 'No launches this quarter.' : 'Nenhum lançamento neste trimestre.';
+
+    container.innerHTML = '';
 
     QUARTERS.forEach((q) => {
       const col = document.createElement('div');
@@ -743,7 +764,7 @@ button{ font-family: var(--font-body); }
 
       const header = document.createElement('div');
       header.className = 'quarter-header';
-      header.innerHTML = `<span class="qlabel">${q.label}</span><span class="qmonths">${MONTHS_SHORT_PT[q.months[0]]} – ${MONTHS_SHORT_PT[q.months[2]]}</span>`;
+      header.innerHTML = `<span class="qlabel">${q.label}</span><span class="qmonths">${monthsShort[q.months[0]]} – ${monthsShort[q.months[2]]}</span>`;
       col.appendChild(header);
 
       const body = document.createElement('div');
@@ -756,7 +777,7 @@ button{ font-family: var(--font-body); }
       if (qItems.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'quarter-empty';
-        empty.textContent = 'Nenhum lançamento neste trimestre.';
+        empty.textContent = emptyText;
         col.appendChild(empty);
       } else {
         q.months.forEach((m) => {
@@ -766,19 +787,19 @@ button{ font-family: var(--font-body); }
           group.className = 'month-group';
           const h4 = document.createElement('h4');
           h4.className = 'month-name';
-          h4.textContent = MONTHS_PT[m];
+          h4.textContent = months[m];
           group.appendChild(h4);
-          monthItems.forEach((p) => group.appendChild(buildLaunchBox(p)));
+          monthItems.forEach((p) => group.appendChild(buildLaunchBox(p, lang)));
           body.appendChild(group);
         });
         col.appendChild(body);
       }
 
-      gridView.appendChild(col);
+      container.appendChild(col);
     });
   }
 
-  function buildLaunchBox(p) {
+  function buildLaunchBox(p, lang) {
     const status = normalizedStatus(p.status);
     const box = document.createElement('div');
     box.className = `launch-box status-${status}`;
@@ -787,6 +808,11 @@ button{ font-family: var(--font-body); }
     name.className = 'lb-name';
     name.textContent = p.name;
     box.appendChild(name);
+
+    const dateRow = document.createElement('div');
+    dateRow.className = 'lb-meta';
+    dateRow.innerHTML = `<svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg><span>${escapeHtml(formatDate(p.date, lang))}</span>`;
+    box.appendChild(dateRow);
 
     if (p.owner) {
       const owner = document.createElement('div');
@@ -802,7 +828,9 @@ button{ font-family: var(--font-body); }
       box.appendChild(desc);
     }
 
-    box.addEventListener('click', () => openModal(p));
+    if (lang !== 'en') {
+      box.addEventListener('click', () => openModal(p));
+    }
     return box;
   }
 
@@ -876,16 +904,17 @@ button{ font-family: var(--font-body); }
     showToast('Lançamento excluído.');
   }
 
-  /* ============ Import / export ============ */
+  /* ============ Import / export (backup) ============ */
   function exportData() {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
+    const today = new Date().toISOString().slice(0, 10);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'data.json';
+    a.download = `roadmap-backup-${today}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Arquivo data.json exportado.');
+    showToast('Backup baixado. Guarde este arquivo para restaurar se o cache do navegador for limpo.');
   }
 
   function importData(file) {
@@ -901,9 +930,9 @@ button{ font-family: var(--font-body); }
         };
         save();
         renderAll();
-        showToast('Dados importados com sucesso.');
+        showToast('Backup restaurado com sucesso.');
       } catch (e) {
-        showToast('Não foi possível ler este arquivo.');
+        showToast('Não foi possível ler este arquivo. Verifique se é um backup válido.');
       }
     };
     reader.readAsText(file);
@@ -916,7 +945,7 @@ button{ font-family: var(--font-body); }
     renderAll();
   }
 
-  /* ============ Visão: generate image + PPT modal ============ */
+  /* ============ Visão: generate image + PPT modal (English output) ============ */
   let lastImageDataUrl = null;
 
   async function openViewModal() {
@@ -934,7 +963,18 @@ button{ font-family: var(--font-body); }
       return;
     }
 
+    const headingEl = document.querySelector('.board-section .section-heading h2');
+    const originalHeadingText = headingEl.textContent;
+    const originalCountText = gridCount.textContent;
+
     try {
+      const items = filteredProducts(state.year);
+      headingEl.textContent = 'Quarterly launch view';
+      gridCount.textContent = items.length + (items.length === 1 ? ' launch' : ' launches');
+      populateQuarterGrid(gridView, items, 'en');
+
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
       const target = document.querySelector('.board-section');
       const canvas = await html2canvas(target, {
         backgroundColor: '#F3F4F7',
@@ -949,6 +989,10 @@ button{ font-family: var(--font-body); }
       generatePptBtn.disabled = false;
     } catch (e) {
       viewLoading.textContent = 'Não foi possível gerar a imagem.';
+    } finally {
+      headingEl.textContent = originalHeadingText;
+      gridCount.textContent = originalCountText;
+      renderGrid();
     }
   }
 
@@ -960,7 +1004,7 @@ button{ font-family: var(--font-body); }
     if (!lastImageDataUrl) return;
     const a = document.createElement('a');
     a.href = lastImageDataUrl;
-    a.download = `Visao-Lancamentos-${state.year}.png`;
+    a.download = `Quarterly-Launch-View-${state.year}.png`;
     a.click();
   }
 
@@ -979,7 +1023,7 @@ button{ font-family: var(--font-body); }
     slide.background = { color: 'FFFFFF' };
 
     slide.addText('Product Launch', { x: 0.4, y: 0.3, w: 6, h: 0.6, fontFace: 'Arial', fontSize: 28, bold: true, color: '15182B' });
-    slide.addText(`Visão por trimestre — ${state.year}`, { x: 0.4, y: 0.85, w: 6, h: 0.4, fontFace: 'Arial', fontSize: 16, color: '565B72' });
+    slide.addText(`Quarterly launch view — ${state.year}`, { x: 0.4, y: 0.85, w: 6, h: 0.4, fontFace: 'Arial', fontSize: 16, color: '565B72' });
 
     const colW = 2.95, gap = 0.25, startX = 0.4, colY = 1.7, colH = 5.2;
     QUARTERS.forEach((q, i) => {
@@ -989,16 +1033,16 @@ button{ font-family: var(--font-body); }
 
       const qItems = items.filter((p) => q.months.includes(new Date(p.date + 'T00:00:00').getMonth()));
       let boxY = colY + 0.55;
-      const boxH = 0.62, boxGap = 0.12;
+      const boxH = 0.68, boxGap = 0.12;
 
       if (qItems.length === 0) {
-        slide.addText('Nenhum lançamento', { x, y: boxY, w: colW, h: 0.3, fontFace: 'Arial', fontSize: 10.5, italic: true, color: '9AA0B4' });
+        slide.addText('No launches', { x, y: boxY, w: colW, h: 0.3, fontFace: 'Arial', fontSize: 10.5, italic: true, color: '9AA0B4' });
       } else {
         let lastMonth = -1;
         qItems.forEach((p) => {
           const m = new Date(p.date + 'T00:00:00').getMonth();
           if (m !== lastMonth) {
-            slide.addText(MONTHS_PT[m], { x, y: boxY, w: colW, h: 0.24, fontFace: 'Arial', fontSize: 10.5, bold: true, color: '15182B' });
+            slide.addText(MONTHS_EN[m], { x, y: boxY, w: colW, h: 0.24, fontFace: 'Arial', fontSize: 10.5, bold: true, color: '15182B' });
             boxY += 0.26;
             lastMonth = m;
           }
@@ -1009,10 +1053,10 @@ button{ font-family: var(--font-body); }
             line: { color: '15182B', width: 1 }
           });
           const lines = [{ text: p.name, options: { bold: true, breakLine: true, fontSize: 9.5, color: STATUS_HEX_TEXT[status] } }];
-          const subParts = [];
+          const subParts = [formatDate(p.date, 'en')];
           if (p.owner) subParts.push(p.owner);
           if (p.description) subParts.push(p.description);
-          if (subParts.length) lines.push({ text: subParts.join(' — '), options: { fontSize: 8, color: STATUS_HEX_TEXT[status] } });
+          lines.push({ text: subParts.join(' — '), options: { fontSize: 8, color: STATUS_HEX_TEXT[status] } });
           slide.addText(lines, { x: x + 0.08, y: boxY + 0.05, w: colW - 0.16, h: boxH - 0.1, fontFace: 'Arial', valign: 'top' });
           boxY += boxH + boxGap;
         });
@@ -1020,11 +1064,11 @@ button{ font-family: var(--font-body); }
     });
 
     let legY = 7.05;
-    slide.addText('Legenda', { x: 0.4, y: legY, w: 1.2, h: 0.22, fontFace: 'Arial', fontSize: 9, bold: true, color: '565B72' });
+    slide.addText('Legend', { x: 0.4, y: legY, w: 1.2, h: 0.22, fontFace: 'Arial', fontSize: 9, bold: true, color: '565B72' });
     STATUS_ORDER.forEach((s, i) => {
       const lx = 1.3 + i * 2.2;
       slide.addShape(pptx.ShapeType.roundRect, { x: lx, y: legY + 0.01, w: 0.18, h: 0.18, rectRadius: 0.03, fill: { color: STATUS_HEX_FILL[s] }, line: { color: '15182B', width: 1 } });
-      slide.addText(STATUS_LABELS[s], { x: lx + 0.26, y: legY - 0.02, w: 1.8, h: 0.22, fontFace: 'Arial', fontSize: 9, color: '3A3F55' });
+      slide.addText(STATUS_LABELS_EN[s], { x: lx + 0.26, y: legY - 0.02, w: 1.8, h: 0.22, fontFace: 'Arial', fontSize: 9, color: '3A3F55' });
     });
 
     pptx.writeFile({ fileName: `Product-Launch-Agenda-${state.year}.pptx` });
