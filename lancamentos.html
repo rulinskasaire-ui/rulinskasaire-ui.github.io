@@ -27,8 +27,9 @@
   --status-concluido-text: #14602F;
   --status-atrasado-bg: #FBE7E7;
   --status-atrasado-text: #8A1F1F;
-  --status-andamento-bg: transparent;
-  --status-andamento-text: #15182B;
+  --status-andamento-bg: #EAEBEF;
+  --status-andamento-text: #3A3F55;
+  --brand-accent: #054E5A;
 }
 
 *{ box-sizing: border-box; }
@@ -231,6 +232,13 @@ button{ font-family: var(--font-body); }
   font-weight: 700;
   display:block;
 }
+.quarter-header .qaccent{
+  width: 26px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand-accent);
+  margin: 4px 0 6px;
+}
 .quarter-header .qmonths{
   font-size: 12.5px;
   color: var(--ink-soft);
@@ -281,6 +289,18 @@ button{ font-family: var(--font-body); }
   margin: 0 0 5px;
   line-height: 1.3;
 }
+.lb-category{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 5px;
+  padding: 2px 7px;
+  margin-bottom: 7px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.lb-category .lb-icon{ width: 11px; height: 11px; }
 .status-concluido .lb-name{ color: var(--status-concluido-text); }
 .status-atrasado .lb-name{ color: var(--status-atrasado-text); }
 .status-andamento .lb-name{ color: var(--status-andamento-text); }
@@ -579,15 +599,38 @@ button{ font-family: var(--font-body); }
   const STATUS_HEX_FILL = {
     concluido: 'E4F5EC',
     atrasado: 'FBE7E7',
-    andamento: 'FFFFFF'
+    andamento: 'EAEBEF'
   };
   const STATUS_HEX_TEXT = {
     concluido: '14602F',
     atrasado: '8A1F1F',
-    andamento: '15182B'
+    andamento: '3A3F55'
   };
 
   const CATEGORY_PALETTE = ['#2F6FED', '#14A085', '#D64550', '#F2A93B', '#7C5CFC', '#2CA6C7', '#6B8F3C', '#C2477B'];
+
+  const CATEGORY_ICONS = {
+    code: '<path d="M9 8l-4 4 4 4M15 8l4 4-4 4"></path>',
+    cpu: '<rect x="6" y="6" width="12" height="12" rx="1"></rect><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"></path>',
+    headset: '<path d="M3 13a9 9 0 0118 0v5a2 2 0 01-2 2h-1v-7h3M3 20v-7h3v7H5a2 2 0 01-2-2z"></path>',
+    box: '<path d="M21 8L12 3 3 8v8l9 5 9-5V8z"></path><path d="M3 8l9 5 9-5M12 13v8"></path>'
+  };
+
+  function getCategoryIconKey(category) {
+    const c = (category || '').toLowerCase();
+    if (/(software|app|sistema|digital|plataforma)/.test(c)) return 'code';
+    if (/(hardware|equipamento|m[aá]quina|dispositivo|produto f[ií]sico)/.test(c)) return 'cpu';
+    if (/(servi[cç]o|service|suporte|atendimento)/.test(c)) return 'headset';
+    return 'box';
+  }
+
+  function hexToRgba(hex, alpha) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
 
   const QUARTERS = [
     { num: '01', label: 'Q1', months: [0, 1, 2] },
@@ -764,7 +807,7 @@ button{ font-family: var(--font-body); }
 
       const header = document.createElement('div');
       header.className = 'quarter-header';
-      header.innerHTML = `<span class="qlabel">${q.label}</span><span class="qmonths">${monthsShort[q.months[0]]} – ${monthsShort[q.months[2]]}</span>`;
+      header.innerHTML = `<span class="qlabel">${q.label}</span><div class="qaccent"></div><span class="qmonths">${monthsShort[q.months[0]]} – ${monthsShort[q.months[2]]}</span>`;
       col.appendChild(header);
 
       const body = document.createElement('div');
@@ -803,6 +846,17 @@ button{ font-family: var(--font-body); }
     const status = normalizedStatus(p.status);
     const box = document.createElement('div');
     box.className = `launch-box status-${status}`;
+
+    if (p.category) {
+      const catColor = getCategoryColor(p.category);
+      const iconKey = getCategoryIconKey(p.category);
+      const cat = document.createElement('div');
+      cat.className = 'lb-category';
+      cat.style.background = hexToRgba(catColor, 0.14);
+      cat.style.color = catColor;
+      cat.innerHTML = `<svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${CATEGORY_ICONS[iconKey]}</svg><span>${escapeHtml(p.category)}</span>`;
+      box.appendChild(cat);
+    }
 
     const name = document.createElement('p');
     name.className = 'lb-name';
@@ -1028,12 +1082,13 @@ button{ font-family: var(--font-body); }
     const colW = 2.95, gap = 0.25, startX = 0.4, colY = 1.7, colH = 5.2;
     QUARTERS.forEach((q, i) => {
       const x = startX + i * (colW + gap);
-      slide.addText(q.label, { x, y: colY, w: colW, h: 0.32, fontFace: 'Arial', fontSize: 15, bold: true, color: '15182B' });
-      slide.addShape(pptx.ShapeType.line, { x, y: colY + 0.38, w: colW, h: 0, line: { color: 'DEE1EA', width: 1 } });
+      slide.addText(q.label, { x, y: colY, w: colW, h: 0.28, fontFace: 'Arial', fontSize: 15, bold: true, color: '15182B' });
+      slide.addShape(pptx.ShapeType.line, { x, y: colY + 0.32, w: 0.3, h: 0, line: { color: '054E5A', width: 2.5 } });
+      slide.addShape(pptx.ShapeType.line, { x, y: colY + 0.42, w: colW, h: 0, line: { color: 'DEE1EA', width: 1 } });
 
       const qItems = items.filter((p) => q.months.includes(new Date(p.date + 'T00:00:00').getMonth()));
-      let boxY = colY + 0.55;
-      const boxH = 0.68, boxGap = 0.12;
+      let boxY = colY + 0.58;
+      const boxH = 0.86, boxGap = 0.12;
 
       if (qItems.length === 0) {
         slide.addText('No launches', { x, y: boxY, w: colW, h: 0.3, fontFace: 'Arial', fontSize: 10.5, italic: true, color: '9AA0B4' });
@@ -1052,12 +1107,22 @@ button{ font-family: var(--font-body); }
             fill: { color: STATUS_HEX_FILL[status] },
             line: { color: '15182B', width: 1 }
           });
+
+          let contentY = boxY + 0.08;
+          if (p.category) {
+            const catHex = getCategoryColor(p.category).replace('#', '');
+            const tagW = Math.min(colW - 0.16, 0.16 + p.category.length * 0.075);
+            slide.addShape(pptx.ShapeType.roundRect, { x: x + 0.08, y: contentY, w: tagW, h: 0.17, rectRadius: 0.03, fill: { color: catHex, transparency: 82 }, line: { type: 'none' } });
+            slide.addText(p.category, { x: x + 0.08, y: contentY - 0.005, w: tagW, h: 0.18, fontFace: 'Arial', fontSize: 7, bold: true, color: catHex, align: 'center', valign: 'middle' });
+            contentY += 0.24;
+          }
+
           const lines = [{ text: p.name, options: { bold: true, breakLine: true, fontSize: 9.5, color: STATUS_HEX_TEXT[status] } }];
           const subParts = [formatDate(p.date, 'en')];
           if (p.owner) subParts.push(p.owner);
           if (p.description) subParts.push(p.description);
           lines.push({ text: subParts.join(' — '), options: { fontSize: 8, color: STATUS_HEX_TEXT[status] } });
-          slide.addText(lines, { x: x + 0.08, y: boxY + 0.05, w: colW - 0.16, h: boxH - 0.1, fontFace: 'Arial', valign: 'top' });
+          slide.addText(lines, { x: x + 0.08, y: contentY, w: colW - 0.16, h: boxY + boxH - contentY - 0.04, fontFace: 'Arial', valign: 'top' });
           boxY += boxH + boxGap;
         });
       }
