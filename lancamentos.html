@@ -7,7 +7,610 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<style>
+/* ============ Design tokens ============ */
+:root{
+  --bg: #F3F4F7;
+  --panel: #FFFFFF;
+  --ink: #15182B;
+  --ink-soft: #565B72;
+  --line: #DEE1EA;
+  --line-soft: #EBEDF2;
+  --accent: #1B2559;
+  --accent-soft: #E9EBF5;
+  --danger: #C23B3B;
+  --radius: 10px;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+*{ box-sizing: border-box; }
+
+html,body{
+  margin:0;
+  padding:0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app{
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+/* ============ Topbar ============ */
+.topbar{
+  display:flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.year-nav{
+  display:flex;
+  align-items:center;
+  gap: 14px;
+}
+
+.year-nav h1{
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.year-arrow{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .15s ease, background .15s ease;
+}
+.year-arrow:hover{ border-color: var(--accent); background: var(--accent-soft); }
+
+.subtitle{
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.topbar-actions{
+  display:flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+button{ font-family: var(--font-body); }
+
+.btn-primary, .btn-ghost, .btn-danger{
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: opacity .15s ease, background .15s ease;
+}
+.btn-primary{
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover{ opacity: .88; }
+
+.btn-ghost{
+  background: var(--panel);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.btn-ghost:hover{ border-color: var(--accent); }
+
+.btn-danger{
+  background: #fff;
+  color: var(--danger);
+  border-color: #EFC9C9;
+}
+.btn-danger:hover{ background: #FBEEEE; }
+
+.dropdown{ position: relative; }
+.caret{ font-size: 10px; margin-left: 2px; }
+.dropdown-menu{
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(21,24,43,0.12);
+  min-width: 170px;
+  padding: 6px;
+  z-index: 50;
+}
+.dropdown-menu.hidden{ display:none; }
+.dropdown-menu button{
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dropdown-menu button:hover{ background: var(--accent-soft); }
+
+/* ============ Filters ============ */
+.filter-row{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 36px;
+}
+
+.filter-chip{
+  display:flex;
+  align-items:center;
+  gap: 7px;
+  padding: 6px 12px 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--ink-soft);
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.filter-chip .dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.filter-chip.active{
+  color: var(--ink);
+  border-color: currentColor;
+  background: var(--accent-soft);
+}
+
+/* ============ Postponed panel ============ */
+.postponed-panel{
+  background: #F8F5FD;
+  border: 1px solid #E4D8F7;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 28px;
+}
+.postponed-panel.hidden{ display:none; }
+.postponed-panel h3{
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #6B3FA0;
+}
+.postponed-panel ul{
+  margin: 0;
+  padding-left: 18px;
+  columns: 2;
+  column-gap: 28px;
+}
+.postponed-panel li{
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+  break-inside: avoid;
+}
+.postponed-panel li strong{ color: var(--ink); font-weight: 600; }
+
+/* ============ Sections ============ */
+.board-section{ margin-bottom: 52px; }
+
+.section-heading{
+  display:flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.section-heading h2{
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  margin: 0;
+}
+.section-count{
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+/* ============ Quarter grid ============ */
+.quarter-grid{
+  display:grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.quarter-col{
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 18px 16px 20px;
+  position: relative;
+  overflow: hidden;
+  min-height: 160px;
+}
+
+.quarter-col::before{
+  content: attr(data-qnum);
+  position: absolute;
+  top: -18px;
+  right: -6px;
+  font-family: var(--font-display);
+  font-size: 92px;
+  font-weight: 700;
+  color: var(--line-soft);
+  line-height: 1;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.quarter-header{
+  position: relative;
+  z-index: 1;
+  margin-bottom: 14px;
+}
+.quarter-header .qlabel{
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  display:block;
+}
+.quarter-header .qmonths{
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.quarter-cards{
+  position: relative;
+  z-index: 1;
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quarter-empty{
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding: 10px 0;
+}
+
+/* Product card (shared look for grid + timeline) */
+.product-card{
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 12px 12px 13px;
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.product-card:hover{
+  box-shadow: 0 2px 10px rgba(21,24,43,0.08);
+}
+
+.product-card .pname{
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+.product-card .pmeta{
+  display:flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.product-card .pdesc{
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.status-badge{
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.status-badge::before{
+  content:'';
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background: currentColor;
+  flex-shrink:0;
+}
+.status-planejado{ background: #E7F0FD; color: #2F6FED; }
+.status-andamento{ background: #FCF2DD; color: #B8860F; }
+.status-concluido{ background: #E4F5EC; color: #1D9A5B; }
+.status-atrasado{ background: #FBEAEA; color: #D6433B; }
+.status-cancelado{ background: #EAEBEF; color: #3A3F55; }
+.status-adiado{ background: #F1EAFB; color: #8E5AC8; }
+
+/* solid status colors, shared by timeline markers and list dots */
+.clr-planejado{ background: #2F6FED; }
+.clr-andamento{ background: #E0A72D; }
+.clr-concluido{ background: #1D9A5B; }
+.clr-atrasado{ background: #D6433B; }
+.clr-cancelado{ background: #3A3F55; }
+.clr-adiado{ background: #8E5AC8; }
+
+.status-dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* month-grouped launch rows inside a quarter column */
+.month-group{ margin-bottom: 14px; }
+.month-group:last-child{ margin-bottom: 0; }
+.month-name{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin: 0 0 6px;
+}
+.launch-row{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  padding: 5px 6px;
+  margin: 0 -6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .12s ease;
+}
+.launch-row:hover{ background: var(--accent-soft); }
+.launch-name{
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* ============ Timeline ============ */
+.timeline{
+  background: var(--panel);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 28px 28px 22px;
+  overflow-x: auto;
+}
+
+.timeline-inner{
+  position: relative;
+  min-width: 900px;
+  padding: 76px 0 40px;
+}
+
+.timeline-lanes{
+  position: relative;
+  height: 0;
+}
+
+.timeline-bar{
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  border-radius: 999px;
+  background: #E4E6EC;
+  transform: translateY(-50%);
+}
+
+.timeline-qdivider{
+  position: absolute;
+  top: -18px;
+  bottom: -28px;
+  width: 0;
+  border-left: 1px dashed var(--line);
+}
+
+.timeline-qlabel{
+  position: absolute;
+  top: 22px;
+  transform: translateX(-50%);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.timeline-pin{
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  cursor: pointer;
+}
+.timeline-marker{
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.timeline-label{
+  position: absolute;
+  top: -34px;
+  left: 0;
+  transform: translateX(-50%);
+  width: 100px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.timeline-pin.row-1 .timeline-label{ top: -62px; }
+.timeline-stem{
+  position: absolute;
+  top: -34px;
+  left: 0;
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+  transform: translateX(-50%);
+}
+
+.timeline-empty{
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding: 20px 0 6px;
+}
+
+/* ============ Footer ============ */
+.app-footer{
+  margin-top: 40px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* ============ Modal ============ */
+.modal-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(21,24,43,0.45);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 20px;
+  z-index: 100;
+}
+.modal-overlay.hidden{ display:none; }
+
+.modal{
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 26px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal h2{
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin: 0 0 18px;
+}
+
+.field{
+  display:flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  flex: 1;
+}
+.field-row{
+  display:flex;
+  gap: 12px;
+}
+.field input, .field select, .field textarea{
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 9px 10px;
+  background: #fff;
+  outline: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus{
+  border-color: var(--accent);
+}
+.field textarea{ resize: vertical; font-family: var(--font-body); }
+
+.modal-actions{
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+.modal-actions-right{ display:flex; gap: 10px; }
+.hidden{ display:none !important; }
+
+/* ============ Toast ============ */
+.toast{
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  padding: 11px 20px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  z-index: 200;
+  box-shadow: 0 6px 18px rgba(21,24,43,0.2);
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 900px){
+  .quarter-grid{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px){
+  .app{ padding: 24px 16px 60px; }
+  .quarter-grid{ grid-template-columns: 1fr; }
+  .field-row{ flex-direction: column; }
+  .topbar{ align-items: flex-start; }
+  .year-nav h1{ font-size: 32px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{ transition: none !important; }
+}
+
+</style>
 </head>
 <body>
 
@@ -128,6 +731,585 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-<script src="app.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ============ Constants ============ */
+  const STORAGE_KEY = 'launchRoadmap_v1';
+
+  const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const MONTHS_SHORT_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  const STATUS_LABELS = {
+    planejado: 'Planejado',
+    andamento: 'Em andamento',
+    concluido: 'Concluído',
+    atrasado: 'Atrasado',
+    cancelado: 'Cancelado',
+    adiado: 'Adiado'
+  };
+  const STATUS_ORDER = ['planejado', 'andamento', 'concluido', 'atrasado', 'cancelado', 'adiado'];
+  const STATUS_HEX = {
+    planejado: '2F6FED',
+    andamento: 'E0A72D',
+    concluido: '1D9A5B',
+    atrasado: 'D6433B',
+    cancelado: '3A3F55',
+    adiado: '8E5AC8'
+  };
+
+  const CATEGORY_PALETTE = ['#2F6FED', '#14A085', '#D64550', '#F2A93B', '#7C5CFC', '#2CA6C7', '#6B8F3C', '#C2477B'];
+
+  // Fallback seed data, used if data.json can't be fetched (e.g. the file was opened
+  // directly instead of through a web server/GitHub Pages, which blocks local fetch()).
+  const FALLBACK_SEED = {
+    categoryColors: { 'Software': '#2F6FED', 'Hardware': '#14A085', 'Serviços': '#D64550' },
+    products: [
+      { id: 'seed-1', name: 'Vision Tools Portfolio', category: 'Software', date: '2026-02-10', status: 'concluido', owner: 'Equipe de Marketing', description: 'Exemplo de lançamento concluído. Clique no card para editar ou excluir.' },
+      { id: 'seed-2', name: 'REVO 11K/16000', category: 'Hardware', date: '2026-08-14', status: 'andamento', owner: 'Equipe de Produto', description: 'Exemplo em andamento, no terceiro trimestre.' },
+      { id: 'seed-3', name: 'STP Tensor Pulse', category: 'Serviços', date: '2026-12-03', status: 'adiado', owner: 'Equipe Comercial', description: 'Exemplo de lançamento adiado. Aparece automaticamente no painel de destaque.' },
+      { id: 'seed-4', name: 'SWS Nova Bomba', category: 'Hardware', date: '2026-06-20', status: 'atrasado', owner: 'Equipe de Produto', description: 'Exemplo com status atrasado.' }
+    ]
+  };
+
+  const QUARTERS = [
+    { num: '01', label: 'Q1', months: [0, 1, 2] },
+    { num: '02', label: 'Q2', months: [3, 4, 5] },
+    { num: '03', label: 'Q3', months: [6, 7, 8] },
+    { num: '04', label: 'Q4', months: [9, 10, 11] }
+  ];
+
+  /* ============ State ============ */
+  let state = {
+    year: new Date().getFullYear(),
+    products: [],
+    categoryColors: {}
+  };
+  let activeCategoryFilters = new Set();
+  let editingId = null;
+
+  /* ============ DOM refs ============ */
+  const $ = (id) => document.getElementById(id);
+  const yearLabel = $('yearLabel');
+  const categoryFilters = $('categoryFilters');
+  const postponedPanel = $('postponedPanel');
+  const postponedList = $('postponedList');
+  const gridView = $('gridView');
+  const gridCount = $('gridCount');
+  const timelineView = $('timelineView');
+  const timelineCount = $('timelineCount');
+  const modalOverlay = $('modalOverlay');
+  const productForm = $('productForm');
+  const modalTitle = $('modalTitle');
+  const deleteBtn = $('deleteBtn');
+  const categoryList = $('categoryList');
+  const toast = $('toast');
+
+  /* ============ Init ============ */
+  async function init() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        state = JSON.parse(saved);
+      } catch (e) {
+        await loadSeed();
+      }
+    } else {
+      await loadSeed();
+    }
+    if (!state.year) state.year = new Date().getFullYear();
+    renderAll();
+    bindEvents();
+  }
+
+  async function loadSeed() {
+    let seed;
+    try {
+      const res = await fetch('data.json');
+      if (!res.ok) throw new Error('not ok');
+      seed = await res.json();
+    } catch (e) {
+      seed = FALLBACK_SEED;
+    }
+    state = {
+      year: (seed.products && seed.products[0]) ? new Date(seed.products[0].date).getFullYear() : new Date().getFullYear(),
+      products: seed.products || [],
+      categoryColors: seed.categoryColors || {}
+    };
+    save();
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  /* ============ Category colors ============ */
+  function getCategoryColor(cat) {
+    if (!state.categoryColors[cat]) {
+      const used = Object.keys(state.categoryColors).length;
+      state.categoryColors[cat] = CATEGORY_PALETTE[used % CATEGORY_PALETTE.length];
+    }
+    return state.categoryColors[cat];
+  }
+
+  /* ============ Helpers ============ */
+  function productsInYear(year) {
+    return state.products.filter((p) => new Date(p.date + 'T00:00:00').getFullYear() === year);
+  }
+
+  function filteredProducts(year) {
+    const all = productsInYear(year);
+    if (activeCategoryFilters.size === 0) return all;
+    return all.filter((p) => activeCategoryFilters.has(p.category));
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.getDate() + ' ' + MONTHS_SHORT_PT[d.getMonth()];
+  }
+
+  function dayOfYearPct(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const start = new Date(d.getFullYear(), 0, 1);
+    const diff = (d - start) / 86400000;
+    const totalDays = (new Date(d.getFullYear(), 11, 31) - start) / 86400000 + 1;
+    return (diff / totalDays) * 100;
+  }
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.add('hidden'), 2600);
+  }
+
+  /* ============ Render orchestration ============ */
+  function renderAll() {
+    yearLabel.textContent = state.year;
+    renderFilters();
+    renderPostponedPanel();
+    renderGrid();
+    renderTimeline();
+  }
+
+  /* ============ Filters ============ */
+  function renderFilters() {
+    const cats = [...new Set(productsInYear(state.year).map((p) => p.category))].sort();
+    categoryFilters.innerHTML = '';
+    if (cats.length === 0) return;
+    cats.forEach((cat) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'filter-chip' + (activeCategoryFilters.has(cat) ? ' active' : '');
+      chip.style.color = getCategoryColor(cat);
+      chip.innerHTML = `<span class="dot" style="background:${getCategoryColor(cat)}"></span>${escapeHtml(cat)}`;
+      chip.addEventListener('click', () => {
+        if (activeCategoryFilters.has(cat)) activeCategoryFilters.delete(cat);
+        else activeCategoryFilters.add(cat);
+        renderFilters();
+        renderGrid();
+        renderTimeline();
+      });
+      categoryFilters.appendChild(chip);
+    });
+  }
+
+  /* ============ Postponed panel ============ */
+  function renderPostponedPanel() {
+    const postponed = productsInYear(state.year).filter((p) => p.status === 'adiado');
+    if (postponed.length === 0) {
+      postponedPanel.classList.add('hidden');
+      postponedList.innerHTML = '';
+      return;
+    }
+    postponedPanel.classList.remove('hidden');
+    postponedList.innerHTML = postponed
+      .map((p) => `<li><strong>${escapeHtml(p.name)}</strong> — ${escapeHtml(p.category)}</li>`)
+      .join('');
+  }
+
+  /* ============ Grid (by quarter, grouped by month) ============ */
+  function renderGrid() {
+    const items = filteredProducts(state.year);
+    gridView.innerHTML = '';
+    gridCount.textContent = items.length + (items.length === 1 ? ' lançamento' : ' lançamentos');
+
+    QUARTERS.forEach((q) => {
+      const col = document.createElement('div');
+      col.className = 'quarter-col';
+      col.setAttribute('data-qnum', q.num);
+
+      const header = document.createElement('div');
+      header.className = 'quarter-header';
+      header.innerHTML = `<span class="qlabel">${q.label}</span><span class="qmonths">${MONTHS_SHORT_PT[q.months[0]]} – ${MONTHS_SHORT_PT[q.months[2]]}</span>`;
+      col.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'quarter-cards';
+
+      const qItems = items
+        .filter((p) => q.months.includes(new Date(p.date + 'T00:00:00').getMonth()))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      if (qItems.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'quarter-empty';
+        empty.textContent = 'Nenhum lançamento neste trimestre.';
+        col.appendChild(empty);
+      } else {
+        q.months.forEach((m) => {
+          const monthItems = qItems.filter((p) => new Date(p.date + 'T00:00:00').getMonth() === m);
+          if (monthItems.length === 0) return;
+          const group = document.createElement('div');
+          group.className = 'month-group';
+          const h4 = document.createElement('h4');
+          h4.className = 'month-name';
+          h4.textContent = MONTHS_PT[m];
+          group.appendChild(h4);
+          monthItems.forEach((p) => group.appendChild(buildLaunchRow(p)));
+          body.appendChild(group);
+        });
+        col.appendChild(body);
+      }
+
+      gridView.appendChild(col);
+    });
+  }
+
+  function buildLaunchRow(p) {
+    const row = document.createElement('div');
+    row.className = 'launch-row';
+    row.innerHTML = `<span class="status-dot clr-${p.status}"></span><span class="launch-name">${escapeHtml(p.name)}</span>`;
+    row.addEventListener('click', () => openModal(p));
+    return row;
+  }
+
+  /* ============ Timeline ============ */
+  function renderTimeline() {
+    const items = filteredProducts(state.year).slice().sort((a, b) => a.date.localeCompare(b.date));
+    timelineCount.textContent = items.length + (items.length === 1 ? ' lançamento' : ' lançamentos');
+    timelineView.innerHTML = '';
+
+    if (items.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'timeline-empty';
+      empty.textContent = 'Nenhum lançamento cadastrado para este ano ainda.';
+      timelineView.appendChild(empty);
+      return;
+    }
+
+    const inner = document.createElement('div');
+    inner.className = 'timeline-inner';
+
+    const lanes = document.createElement('div');
+    lanes.className = 'timeline-lanes';
+
+    const bar = document.createElement('div');
+    bar.className = 'timeline-bar';
+    lanes.appendChild(bar);
+
+    // Quarter dividers + labels (based on real day-of-year boundaries)
+    const isLeap = (state.year % 4 === 0 && state.year % 100 !== 0) || state.year % 400 === 0;
+    const totalDays = isLeap ? 366 : 365;
+    const qBoundaryDays = [0, 90, 181, 273, totalDays];
+    QUARTERS.forEach((q, i) => {
+      const startPct = (qBoundaryDays[i] / totalDays) * 100;
+      const endPct = (qBoundaryDays[i + 1] / totalDays) * 100;
+      if (i > 0) {
+        const div = document.createElement('div');
+        div.className = 'timeline-qdivider';
+        div.style.left = startPct + '%';
+        lanes.appendChild(div);
+      }
+      const lbl = document.createElement('span');
+      lbl.className = 'timeline-qlabel';
+      lbl.style.left = ((startPct + endPct) / 2) + '%';
+      lbl.textContent = q.label;
+      lanes.appendChild(lbl);
+    });
+
+    // Markers with simple collision avoidance (alternate row when close together)
+    let lastPct = -999;
+    items.forEach((p, idx) => {
+      const pct = dayOfYearPct(p.date);
+      const row = (pct - lastPct < 6) ? 1 : 0;
+      lastPct = pct;
+
+      const pin = document.createElement('div');
+      pin.className = 'timeline-pin' + (row === 1 ? ' row-1' : '');
+      pin.style.left = pct + '%';
+
+      if (row === 1) {
+        const stem = document.createElement('span');
+        stem.className = 'timeline-stem';
+        pin.appendChild(stem);
+      }
+
+      const label = document.createElement('span');
+      label.className = 'timeline-label';
+      label.textContent = p.name;
+      pin.appendChild(label);
+
+      const marker = document.createElement('span');
+      marker.className = `timeline-marker clr-${p.status}`;
+      marker.textContent = idx + 1;
+      marker.title = `${p.name} — ${formatDate(p.date)} (${STATUS_LABELS[p.status]})`;
+      pin.appendChild(marker);
+
+      pin.addEventListener('click', () => openModal(p));
+      lanes.appendChild(pin);
+    });
+
+    inner.appendChild(lanes);
+    timelineView.appendChild(inner);
+  }
+
+  /* ============ Modal ============ */
+  function openModal(product) {
+    editingId = product ? product.id : null;
+    modalTitle.textContent = product ? 'Editar lançamento' : 'Novo lançamento';
+    deleteBtn.classList.toggle('hidden', !product);
+
+    $('f-name').value = product ? product.name : '';
+    $('f-category').value = product ? product.category : '';
+    $('f-date').value = product ? product.date : '';
+    $('f-status').value = product ? product.status : 'planejado';
+    $('f-owner').value = product ? (product.owner || '') : '';
+    $('f-desc').value = product ? (product.description || '') : '';
+
+    const cats = Object.keys(state.categoryColors);
+    categoryList.innerHTML = cats.map((c) => `<option value="${escapeHtml(c)}">`).join('');
+
+    modalOverlay.classList.remove('hidden');
+    $('f-name').focus();
+  }
+
+  function closeModal() {
+    modalOverlay.classList.add('hidden');
+    productForm.reset();
+    editingId = null;
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const name = $('f-name').value.trim();
+    const category = $('f-category').value.trim();
+    const date = $('f-date').value;
+    if (!name || !category || !date) return;
+
+    getCategoryColor(category); // ensure color assigned
+
+    const payload = {
+      id: editingId || ('p-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)),
+      name,
+      category,
+      date,
+      status: $('f-status').value,
+      owner: $('f-owner').value.trim(),
+      description: $('f-desc').value.trim()
+    };
+
+    if (editingId) {
+      const idx = state.products.findIndex((p) => p.id === editingId);
+      if (idx > -1) state.products[idx] = payload;
+    } else {
+      state.products.push(payload);
+    }
+
+    // switch displayed year to match the new/edited item so the user sees it
+    state.year = new Date(date + 'T00:00:00').getFullYear();
+
+    save();
+    renderAll();
+    closeModal();
+    showToast('Lançamento salvo.');
+  }
+
+  function handleDelete() {
+    if (!editingId) return;
+    if (!confirm('Excluir este lançamento?')) return;
+    state.products = state.products.filter((p) => p.id !== editingId);
+    save();
+    renderAll();
+    closeModal();
+    showToast('Lançamento excluído.');
+  }
+
+  /* ============ Import / export ============ */
+  function exportData() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Arquivo data.json exportado.');
+  }
+
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!parsed.products) throw new Error('Formato inválido');
+        state = {
+          year: parsed.year || state.year,
+          products: parsed.products,
+          categoryColors: parsed.categoryColors || {}
+        };
+        save();
+        renderAll();
+        showToast('Dados importados com sucesso.');
+      } catch (e) {
+        showToast('Não foi possível ler este arquivo.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ============ Year navigation ============ */
+  function changeYear(delta) {
+    state.year += delta;
+    save();
+    renderAll();
+  }
+
+  /* ============ PPT generation ============ */
+  function generatePpt() {
+    if (typeof PptxGenJS === 'undefined') {
+      showToast('Biblioteca de PPT ainda carregando, tente novamente em instantes.');
+      return;
+    }
+    const items = filteredProducts(state.year).slice().sort((a, b) => a.date.localeCompare(b.date));
+    const pptx = new PptxGenJS();
+    pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 });
+    pptx.layout = 'WIDE';
+
+    const slide = pptx.addSlide();
+    slide.background = { color: 'FFFFFF' };
+
+    slide.addText('Product Launch', { x: 0.4, y: 0.28, w: 6, h: 0.6, fontFace: 'Arial', fontSize: 28, bold: true, color: '15182B' });
+    slide.addText(`Agenda ${state.year}`, { x: 0.4, y: 0.82, w: 4, h: 0.4, fontFace: 'Arial', fontSize: 16, color: '565B72' });
+
+    // Postponed callout, top right
+    const postponed = items.filter((p) => p.status === 'adiado');
+    if (postponed.length) {
+      slide.addText('Lançamentos adiados:', { x: 9.6, y: 0.25, w: 3.3, h: 0.28, fontFace: 'Arial', fontSize: 11, bold: true, color: '8E5AC8' });
+      const bullets = postponed.map((p) => ({ text: p.name, options: { bullet: true, breakLine: true } }));
+      slide.addText(bullets, { x: 9.6, y: 0.55, w: 3.3, h: 1.1, fontFace: 'Arial', fontSize: 10, color: '3A3F55' });
+    }
+
+    // Quarter columns
+    const colW = 2.95, gap = 0.25, startX = 0.4, colY = 1.55, colH = 4.3;
+    QUARTERS.forEach((q, i) => {
+      const x = startX + i * (colW + gap);
+      slide.addText(q.label, { x, y: colY, w: colW, h: 0.32, fontFace: 'Arial', fontSize: 15, bold: true, color: '15182B' });
+      slide.addShape(pptx.ShapeType.line, { x, y: colY + 0.38, w: colW, h: 0, line: { color: 'DEE1EA', width: 1 } });
+
+      const qItems = items.filter((p) => q.months.includes(new Date(p.date + 'T00:00:00').getMonth()));
+      const paragraphs = [];
+      q.months.forEach((m) => {
+        const monthItems = qItems.filter((p) => new Date(p.date + 'T00:00:00').getMonth() === m);
+        if (!monthItems.length) return;
+        paragraphs.push({ text: MONTHS_PT[m], options: { bold: true, breakLine: true, color: '15182B', fontSize: 11.5, paraSpaceBefore: 8 } });
+        monthItems.forEach((p) => {
+          paragraphs.push({
+            text: p.name,
+            options: { breakLine: true, fontSize: 10.5, color: STATUS_HEX[p.status], bullet: { code: '25CF' } }
+          });
+        });
+      });
+      if (paragraphs.length === 0) {
+        paragraphs.push({ text: 'Nenhum lançamento', options: { fontSize: 10.5, italic: true, color: '9AA0B4' } });
+      }
+      slide.addText(paragraphs, { x, y: colY + 0.5, w: colW, h: colH, fontFace: 'Arial', valign: 'top' });
+    });
+
+    // Timeline bar
+    const barY = 6.55, barX = 0.4, barW = 12.5;
+    slide.addShape(pptx.ShapeType.roundRect, { x: barX, y: barY, w: barW, h: 0.1, fill: { color: 'E4E6EC' }, line: { type: 'none' }, rectRadius: 0.05 });
+    slide.addText('Linha do tempo', { x: barX, y: barY + 0.28, w: barW, h: 0.3, align: 'center', fontFace: 'Arial', fontSize: 12, bold: true, color: '565B72' });
+
+    const isLeap = (state.year % 4 === 0 && state.year % 100 !== 0) || state.year % 400 === 0;
+    const totalDays = isLeap ? 366 : 365;
+
+    items.forEach((p, idx) => {
+      const d = new Date(p.date + 'T00:00:00');
+      const start = new Date(d.getFullYear(), 0, 1);
+      const dayPct = ((d - start) / 86400000) / totalDays;
+      const cx = barX + dayPct * barW;
+      const size = 0.34;
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: cx - size / 2, y: barY - size / 2 + 0.05, w: size, h: size,
+        fill: { color: STATUS_HEX[p.status] }, line: { color: 'FFFFFF', width: 1.5 }
+      });
+      slide.addText(String(idx + 1), {
+        x: cx - size / 2, y: barY - size / 2 + 0.05, w: size, h: size,
+        align: 'center', valign: 'middle', fontFace: 'Arial', fontSize: 9, bold: true, color: 'FFFFFF'
+      });
+      const labelRow = idx % 2;
+      slide.addText(p.name, {
+        x: cx - 0.6, y: barY - 0.42 - (labelRow * 0.32), w: 1.2, h: 0.3,
+        align: 'center', fontFace: 'Arial', fontSize: 7.5, color: '15182B'
+      });
+    });
+
+    // Legend
+    let legY = barY + 0.55;
+    slide.addText('Legenda', { x: barX, y: legY, w: 2, h: 0.25, fontFace: 'Arial', fontSize: 9, bold: true, color: '565B72' });
+    STATUS_ORDER.forEach((s, i) => {
+      const lx = barX + 0.9 + i * 1.85;
+      slide.addShape(pptx.ShapeType.ellipse, { x: lx, y: legY + 0.02, w: 0.13, h: 0.13, fill: { color: STATUS_HEX[s] }, line: { type: 'none' } });
+      slide.addText(STATUS_LABELS[s], { x: lx + 0.2, y: legY - 0.03, w: 1.6, h: 0.22, fontFace: 'Arial', fontSize: 8.5, color: '3A3F55' });
+    });
+
+    pptx.writeFile({ fileName: `Product-Launch-Agenda-${state.year}.pptx` });
+    showToast('Gerando o arquivo PowerPoint...');
+  }
+
+  /* ============ Utils ============ */
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  /* ============ Events ============ */
+  function bindEvents() {
+    $('prevYear').addEventListener('click', () => changeYear(-1));
+    $('nextYear').addEventListener('click', () => changeYear(1));
+
+    $('addBtn').addEventListener('click', () => openModal(null));
+    $('cancelBtn').addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modalOverlay.classList.contains('hidden')) closeModal(); });
+
+    productForm.addEventListener('submit', handleSubmit);
+    deleteBtn.addEventListener('click', handleDelete);
+
+    $('exportBtn').addEventListener('click', exportData);
+    $('importBtn').addEventListener('click', () => $('importFile').click());
+    $('importFile').addEventListener('change', (e) => {
+      if (e.target.files[0]) importData(e.target.files[0]);
+      e.target.value = '';
+    });
+
+    const viewMenuBtn = $('viewMenuBtn');
+    const viewMenu = $('viewMenu');
+    viewMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      viewMenu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => viewMenu.classList.add('hidden'));
+    $('generatePptBtn').addEventListener('click', () => {
+      viewMenu.classList.add('hidden');
+      generatePpt();
+    });
+  }
+
+  init();
+})();
+
+</script>
 </body>
 </html>
