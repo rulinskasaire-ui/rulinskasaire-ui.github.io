@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap de Lançamentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="topbar-title">
+      <div class="year-nav">
+        <button id="prevYear" class="year-arrow" aria-label="Ano anterior">‹</button>
+        <h1 id="yearLabel">2026</h1>
+        <button id="nextYear" class="year-arrow" aria-label="Próximo ano">›</button>
+      </div>
+      <p class="subtitle">Lançamentos de produtos ao longo do ano</p>
+    </div>
+    <div class="topbar-actions">
+      <button id="importBtn" class="btn-ghost">Importar dados</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button id="exportBtn" class="btn-ghost">Exportar dados</button>
+      <div class="dropdown">
+        <button id="viewMenuBtn" class="btn-ghost">Visão <span class="caret">▾</span></button>
+        <div id="viewMenu" class="dropdown-menu hidden">
+          <button id="generatePptBtn" type="button">Gerar PPT</button>
+        </div>
+      </div>
+      <button id="addBtn" class="btn-primary">Novo lançamento</button>
+    </div>
+  </header>
+
+  <div id="categoryFilters" class="filter-row" aria-label="Filtrar por categoria"></div>
+
+  <section id="postponedPanel" class="postponed-panel hidden">
+    <h3>Lançamentos adiados</h3>
+    <ul id="postponedList"></ul>
+  </section>
+
+  <main>
+
+    <section class="board-section">
+      <div class="section-heading">
+        <h2>Visão por trimestre</h2>
+        <span id="gridCount" class="section-count"></span>
+      </div>
+      <div id="gridView" class="quarter-grid"></div>
+    </section>
+
+    <section class="board-section">
+      <div class="section-heading">
+        <h2>Linha do tempo</h2>
+        <span id="timelineCount" class="section-count"></span>
+      </div>
+      <div id="timelineView" class="timeline"></div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <span id="storageNote">Dados salvos neste navegador.</span>
+  </footer>
+
+</div>
+
+<div id="modalOverlay" class="modal-overlay hidden">
+  <form id="productForm" class="modal" novalidate>
+    <h2 id="modalTitle">Novo lançamento</h2>
+
+    <label class="field">
+      <span>Nome do produto</span>
+      <input required id="f-name" type="text" maxlength="80" placeholder="Ex: Linha Aurora">
+    </label>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Categoria</span>
+        <input required id="f-category" type="text" maxlength="40" list="categoryList" placeholder="Ex: Software">
+        <datalist id="categoryList"></datalist>
+      </label>
+
+      <label class="field">
+        <span>Data de lançamento</span>
+        <input required id="f-date" type="date">
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Status</span>
+        <select id="f-status">
+          <option value="planejado">Planejado</option>
+          <option value="andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+          <option value="atrasado">Atrasado</option>
+          <option value="cancelado">Cancelado</option>
+          <option value="adiado">Adiado</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Responsável</span>
+        <input id="f-owner" type="text" maxlength="60" placeholder="Ex: Time de Produto">
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Descrição curta</span>
+      <textarea id="f-desc" maxlength="180" rows="3" placeholder="Uma frase sobre o lançamento"></textarea>
+    </label>
+
+    <div class="modal-actions">
+      <button type="button" id="deleteBtn" class="btn-danger hidden">Excluir</button>
+      <div class="modal-actions-right">
+        <button type="button" id="cancelBtn" class="btn-ghost">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
