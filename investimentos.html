@@ -224,6 +224,7 @@
   table.data-table th:first-child, table.data-table td:first-child{ text-align:left; }
   table.data-table td[contenteditable="true"]{ font-weight:500; outline:none; border-radius:8px; }
   table.data-table td[contenteditable="true"]:focus{ background: var(--primary-tint); box-shadow: 0 0 0 1.5px var(--primary); }
+  table.data-table td.cell-invalid{ background: #FFF1F3; box-shadow: 0 0 0 1.5px var(--down) inset; color: var(--down); }
   table.data-table td.month-cell{ color: var(--text); font-weight:600; }
   .row-actions button{
     background:none; border:none; color: var(--text-faint); font-size:16px; padding: 2px 6px; border-radius:6px;
@@ -351,9 +352,10 @@
     <div class="table-toolbar">
       <div>
         <h2 style="margin-bottom:2px;">Lançamentos mensais</h2>
-        <p class="panel-sub" style="margin-bottom:0;">Edite qualquer valor diretamente na tabela.</p>
+        <p class="panel-sub" style="margin-bottom:0;">Edite qualquer valor diretamente na tabela (padrão 1.234,56). Ao sair da célula, ela se formata sozinha.</p>
       </div>
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn danger-outline" id="fix-suspicious-btn" title="Procura valores que parecem ter perdido a vírgula decimal">Corrigir valores suspeitos</button>
         <button class="btn" id="add-month-btn">+ Novo mês</button>
         <button class="btn primary" id="save-table-btn">Salvar alterações</button>
       </div>
@@ -658,6 +660,39 @@ if (typeof Chart !== 'undefined'){
 ============================================================ */
 function fmtBRL(v){
   return v.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+/* Formata um número no padrão brasileiro sem o prefixo "R$" — usado na tabela
+   editável, onde a pessoa só digita o valor (ex: 88.397,24). */
+function fmtBRLPlain(v){
+  const num = Number(v) || 0;
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+/* Interpreta o texto digitado numa célula de valor, aceitando tanto o padrão
+   brasileiro (1.234,56) quanto variações comuns (1234.56, 1234,56, 1234).
+   Retorna NaN se o texto não puder ser interpretado como número. */
+function parseCurrencyInput(raw){
+  const original = (raw || '').toString().trim();
+  if (!original) return 0; /* célula vazia: trata como zero */
+  let s = original.replace(/[^\d.,-]/g, '');
+  if (!s) return NaN; /* tinha texto, mas nada numérico (ex: "abc") -> inválido */
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  if (hasComma && hasDot){
+    /* 1.234,56 -> ponto é milhar, vírgula é decimal */
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (hasComma && !hasDot){
+    /* 1234,56 -> vírgula é decimal */
+    s = s.replace(',', '.');
+  } else if (hasDot && !hasComma){
+    /* Só ponto: se parecer separador de milhar (ex: 1.234), remove;
+       senão trata como separador decimal (ex: 1234.56). */
+    const parts = s.split('.');
+    if (parts.length === 2 && parts[1].length === 3){
+      s = s.replace('.', '');
+    }
+  }
+  const num = parseFloat(s);
+  return isNaN(num) ? NaN : num;
 }
 function fmtPct(v){
   const sign = v > 0 ? '+' : '';
@@ -1164,7 +1199,7 @@ function renderTable(){
     let cells = `<td class="month-cell" contenteditable="true" data-field="label">${month.label}</td>`;
     state.investments.forEach(inv => {
       const val = month.values[inv.id];
-      cells += `<td contenteditable="true" data-field="value" data-inv="${inv.id}">${val !== undefined ? val : ''}</td>`;
+      cells += `<td contenteditable="true" data-field="value" data-inv="${inv.id}">${val !== undefined ? fmtBRLPlain(val) : ''}</td>`;
     });
     cells += `<td class="row-actions"><button data-action="delete-month" title="Remover mês">✕</button></td>`;
     tr.innerHTML = cells;
@@ -1184,27 +1219,101 @@ function renderTable(){
   });
 }
 
+/* Reformata a célula sozinha quando a pessoa sai dela (padrão 1.234,56),
+   ou marca em vermelho se o texto não for reconhecido como número. */
+document.getElementById('table-body').addEventListener('focusout', (e) => {
+  const td = e.target.closest('[data-field="value"]');
+  if (!td) return;
+  const raw = td.textContent.trim();
+  if (raw === ''){ td.classList.remove('cell-invalid'); return; }
+  const num = parseCurrencyInput(raw);
+  if (isNaN(num)){
+    td.classList.add('cell-invalid');
+    return;
+  }
+  td.classList.remove('cell-invalid');
+  td.textContent = fmtBRLPlain(num);
+});
+
 function readTableIntoState(){
   const rows = document.querySelectorAll('#table-body tr');
   const newMonths = [];
+  const invalidCells = [];
   rows.forEach(tr => {
     const labelCell = tr.querySelector('[data-field="label"]');
     const label = labelCell.textContent.trim() || 'Sem título';
     const values = {};
     tr.querySelectorAll('[data-field="value"]').forEach(td => {
       const invId = td.dataset.inv;
-      const raw = td.textContent.trim().replace(/\./g,'').replace(',', '.');
-      const num = parseFloat(raw);
-      values[invId] = isNaN(num) ? 0 : num;
+      const raw = td.textContent.trim();
+      if (raw === ''){ values[invId] = 0; td.classList.remove('cell-invalid'); return; }
+      const num = parseCurrencyInput(raw);
+      if (isNaN(num)){
+        td.classList.add('cell-invalid');
+        const invName = (state.investments.find(i => i.id === invId) || {}).name || invId;
+        invalidCells.push(label + ' — ' + invName);
+      } else {
+        td.classList.remove('cell-invalid');
+        values[invId] = num;
+      }
     });
     newMonths.push({ label, values });
   });
+  if (invalidCells.length > 0){
+    alert('Não foi possível salvar: valor inválido em:\n• ' + invalidCells.join('\n• ') + '\n\nCorrija as células destacadas em vermelho e tente salvar novamente.');
+    return false;
+  }
   state.months = newMonths;
   saveState();
+  return true;
 }
 
+function fixSuspiciousValues(){
+  const suggestions = [];
+  state.investments.forEach(inv => {
+    const series = state.months.map((m, idx) => ({ idx, v: Number(m.values[inv.id]) }));
+    const decimalRefs = series.filter(s => !isNaN(s.v) && !Number.isInteger(s.v));
+    const referenceAvg = decimalRefs.length > 0
+      ? decimalRefs.reduce((s, x) => s + x.v, 0) / decimalRefs.length
+      : null;
+    series.forEach(s => {
+      if (isNaN(s.v) || s.v === 0 || !Number.isInteger(s.v)) return;
+      const divided = s.v / 100;
+      let suspicious = false;
+      if (referenceAvg !== null){
+        if (divided >= referenceAvg * 0.3 && divided <= referenceAvg * 3) suspicious = true;
+      } else if (Math.abs(s.v) >= 100000){
+        suspicious = true;
+      }
+      if (suspicious){
+        suggestions.push({ monthIdx: s.idx, invId: inv.id, monthLabel: state.months[s.idx].label, invName: inv.name, oldValue: s.v, newValue: divided });
+      }
+    });
+  });
+  return suggestions;
+}
+
+document.getElementById('fix-suspicious-btn').addEventListener('click', () => {
+  const suggestions = fixSuspiciousValues();
+  if (suggestions.length === 0){
+    alert('Nenhum valor suspeito encontrado — seus dados parecem OK.');
+    return;
+  }
+  const lines = suggestions.map(s => '• ' + s.monthLabel + ' — ' + s.invName + ': R$ ' + fmtBRLPlain(s.oldValue) + ' → R$ ' + fmtBRLPlain(s.newValue));
+  const msg = 'Encontrei ' + suggestions.length + ' valor(es) que parecem ter perdido a vírgula decimal (ficaram 100x maiores que o esperado). Correção proposta:\n\n'
+    + lines.join('\n')
+    + '\n\nAplicar essa correção agora? (confira os valores depois na tabela)';
+  if (confirm(msg)){
+    suggestions.forEach(s => { state.months[s.monthIdx].values[s.invId] = s.newValue; });
+    saveState();
+    renderAll();
+    alert('Correção aplicada. Confira os valores na tabela e nos cards — se algo não bater, você pode ajustar manualmente na célula.');
+  }
+});
+
 document.getElementById('save-table-btn').addEventListener('click', () => {
-  readTableIntoState();
+  const ok = readTableIntoState();
+  if (!ok) return;
   renderAll();
 });
 
