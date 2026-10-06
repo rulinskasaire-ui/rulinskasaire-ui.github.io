@@ -137,11 +137,23 @@
   .gastos-form-actions{ display:flex; gap:10px; }
   @media (max-width: 640px){ .gastos-form-row{ grid-template-columns: 1fr; } }
 
+  .gastos-split{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items:start; }
+  .gastos-col{ border:1px solid var(--border); border-radius: var(--radius-md); padding: 16px; min-width:0; }
+  .gastos-col.current{ background: var(--surface-2); border-color: var(--primary-tint); }
+  .gastos-col-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom: 10px; flex-wrap:wrap; }
+  .gastos-col-head h3{ font-family: var(--font-display); font-size: 14.5px; font-weight:600; margin:0; }
+  .gastos-col-month{ color: var(--text-faint); font-weight:500; font-size:12.5px; margin-left:4px; }
+  .gastos-col-total{ color: var(--text-dim); font-size: 13px; font-weight:600; }
+  .gastos-split table.gastos-table{ min-width: 0; }
+  .gastos-split table.gastos-table th, .gastos-split table.gastos-table td{ white-space: normal; padding: 9px 8px; font-size: 13px; }
+  .gastos-split table.gastos-table td:nth-child(3){ white-space: nowrap; }
+  .small-note{ display:block; color: var(--text-faint); font-size: 11px; margin-top: 3px; }
+  @media (max-width: 960px){ .gastos-split{ grid-template-columns: 1fr; } }
   table.gastos-table td, table.gastos-table th{ text-align:left; }
   table.gastos-table td:nth-child(3), table.gastos-table th:nth-child(3){ text-align:right; }
   table.gastos-table td:nth-child(4), table.gastos-table th:nth-child(4){ text-align:center; }
-  .badge-recorrente{ display:inline-block; padding: 3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; background: var(--primary-tint); color: var(--primary); }
-  .badge-prazo{ display:inline-block; padding: 3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; background: #FFF1E3; color: var(--gold); }
+  .badge-recorrente{ display:inline-block; white-space:nowrap; padding: 3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; background: var(--primary-tint); color: var(--primary); }
+  .badge-prazo{ display:inline-block; white-space:nowrap; padding: 3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; background: #FFF1E3; color: var(--gold); }
 
   /* ---------- HERO ---------- */
   .hero{
@@ -458,15 +470,27 @@
       </div>
       <div class="gastos-form-row">
         <div class="gastos-field">
+          <label class="field-label">A partir de (mês/ano)</label>
+          <div style="display:flex; gap:8px;">
+            <select id="income-form-start-month" class="login-input"></select>
+            <select id="income-form-start-year" class="login-input"></select>
+          </div>
+        </div>
+        <div class="gastos-field">
           <label class="field-label">Recorrência</label>
           <select id="income-form-recurring" class="login-input">
             <option value="true">Mensal (recorrente, sem previsão de acabar)</option>
             <option value="false">Tem prazo para acabar</option>
           </select>
         </div>
+      </div>
+      <div class="gastos-form-row">
         <div class="gastos-field" id="income-form-end-wrap" style="display:none;">
           <label class="field-label">Último mês em que recebo esse valor</label>
-          <input type="month" id="income-form-end" class="login-input">
+          <div style="display:flex; gap:8px;">
+            <select id="income-form-end-month" class="login-input"></select>
+            <select id="income-form-end-year" class="login-input"></select>
+          </div>
         </div>
       </div>
       <div class="gastos-form-actions">
@@ -474,13 +498,31 @@
         <button type="button" class="btn" id="income-form-cancel" style="display:none;">Cancelar edição</button>
       </div>
     </form>
-    <div class="table-scroll">
-      <table class="data-table gastos-table">
-        <thead>
-          <tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr>
-        </thead>
-        <tbody id="income-list"></tbody>
-      </table>
+    <div class="gastos-split">
+      <div class="gastos-col">
+        <div class="gastos-col-head">
+          <h3>Entradas do mês passado <span class="gastos-col-month" id="income-prev-month"></span></h3>
+          <span class="gastos-col-total tnum" id="income-prev-total"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table gastos-table">
+            <thead><tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr></thead>
+            <tbody id="income-list-prev"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="gastos-col current">
+        <div class="gastos-col-head">
+          <h3>Entradas do mês corrente <span class="gastos-col-month" id="income-curr-month"></span></h3>
+          <span class="gastos-col-total tnum" id="income-curr-total"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table gastos-table">
+            <thead><tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr></thead>
+            <tbody id="income-list-curr"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -507,10 +549,17 @@
         </div>
         <div class="gastos-field">
           <label class="field-label">Dia do mês do vencimento</label>
-          <input type="number" min="1" max="31" id="expense-form-day" class="login-input" placeholder="Ex: 10">
+          <input type="number" min="1" max="31" id="expense-form-day" class="login-input" placeholder="Ex: 5">
         </div>
       </div>
       <div class="gastos-form-row">
+        <div class="gastos-field">
+          <label class="field-label">A partir de (mês/ano)</label>
+          <div style="display:flex; gap:8px;">
+            <select id="expense-form-start-month" class="login-input"></select>
+            <select id="expense-form-start-year" class="login-input"></select>
+          </div>
+        </div>
         <div class="gastos-field">
           <label class="field-label">Recorrência</label>
           <select id="expense-form-recurring" class="login-input">
@@ -518,6 +567,8 @@
             <option value="false">Tem prazo para acabar</option>
           </select>
         </div>
+      </div>
+      <div class="gastos-form-row">
         <div class="gastos-field" id="expense-form-end-wrap" style="display:none;">
           <label class="field-label">Último mês em que pago essa conta</label>
           <div style="display:flex; gap:8px;">
@@ -531,13 +582,31 @@
         <button type="button" class="btn" id="expense-form-cancel" style="display:none;">Cancelar edição</button>
       </div>
     </form>
-    <div class="table-scroll">
-      <table class="data-table gastos-table">
-        <thead>
-          <tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr>
-        </thead>
-        <tbody id="expense-list"></tbody>
-      </table>
+    <div class="gastos-split">
+      <div class="gastos-col">
+        <div class="gastos-col-head">
+          <h3>Gastos do mês passado <span class="gastos-col-month" id="expense-prev-month"></span></h3>
+          <span class="gastos-col-total tnum" id="expense-prev-total"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table gastos-table">
+            <thead><tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr></thead>
+            <tbody id="expense-list-prev"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="gastos-col current">
+        <div class="gastos-col-head">
+          <h3>Gastos do mês corrente <span class="gastos-col-month" id="expense-curr-month"></span></h3>
+          <span class="gastos-col-total tnum" id="expense-curr-total"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table gastos-table">
+            <thead><tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr></thead>
+            <tbody id="expense-list-curr"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1410,11 +1479,16 @@ function getMonthKeys(n){
   }
   return keys;
 }
+function monthKeyShort(key){
+  const [y, m] = key.split('-');
+  return MONTH_NAMES[parseInt(m, 10) - 1].slice(0, 3) + '/' + y;
+}
 function monthKeyLabel(key){
   const [y, m] = key.split('-');
   return MONTH_NAMES[parseInt(m, 10) - 1] + '/' + y;
 }
 function isActiveInMonth(entry, monthKey){
+  if (entry.startDate && monthKey < entry.startDate) return false;
   if (entry.recurring) return true;
   if (!entry.endDate) return true;
   return monthKey <= entry.endDate;
@@ -1463,38 +1537,58 @@ handleCategorySelectChange(document.getElementById('income-form-category'), 'inc
 handleCategorySelectChange(document.getElementById('expense-form-category'), 'expense');
 
 /* ============================================================
-   CONSULTOR DE GASTOS — seletores mês/ano (data de término de Saídas)
+   CONSULTOR DE GASTOS — seletores mês/ano (calendário simples)
 ============================================================ */
-function populateExpenseEndSelectors(selectedMonthKey){
-  const monthSel = document.getElementById('expense-form-end-month');
-  const yearSel = document.getElementById('expense-form-end-year');
-  if (!monthSel.dataset.populated){
-    monthSel.innerHTML = MONTH_NAMES.map((name, i) => `<option value="${String(i + 1).padStart(2, '0')}">${name}</option>`).join('');
-    monthSel.dataset.populated = '1';
-  }
-  if (!yearSel.dataset.populated){
-    const nowY = new Date().getFullYear();
-    const years = [];
-    for (let y = nowY - 1; y <= nowY + 6; y++) years.push(y);
-    yearSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
-    yearSel.dataset.populated = '1';
-  }
-  if (selectedMonthKey){
-    const [y, m] = selectedMonthKey.split('-');
+const PICKER_YEARS_BACK = 5;
+const PICKER_YEARS_FORWARD = 6;
+const PICKER_FIELDS = [['income', 'start'], ['income', 'end'], ['expense', 'start'], ['expense', 'end']];
+
+function previousMonthKey(){
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function setupMonthYearPicker(prefix, which){
+  const monthSel = document.getElementById(prefix + '-form-' + which + '-month');
+  const yearSel = document.getElementById(prefix + '-form-' + which + '-year');
+  if (monthSel.dataset.populated) return;
+  /* o campo "a partir de" aceita ficar em branco (itens antigos, sem data de início) */
+  const blankM = which === 'start' ? '<option value="">Mês</option>' : '';
+  const blankY = which === 'start' ? '<option value="">Ano</option>' : '';
+  monthSel.innerHTML = blankM + MONTH_NAMES.map((name, i) => `<option value="${String(i + 1).padStart(2, '0')}">${name}</option>`).join('');
+  const nowY = new Date().getFullYear();
+  const years = [];
+  for (let y = nowY - PICKER_YEARS_BACK; y <= nowY + PICKER_YEARS_FORWARD; y++) years.push(y);
+  yearSel.innerHTML = blankY + years.map(y => `<option value="${y}">${y}</option>`).join('');
+  monthSel.dataset.populated = '1';
+}
+function setMonthYearPicker(prefix, which, monthKey){
+  const monthSel = document.getElementById(prefix + '-form-' + which + '-month');
+  const yearSel = document.getElementById(prefix + '-form-' + which + '-year');
+  if (monthKey){
+    const [y, m] = monthKey.split('-');
     monthSel.value = m;
     yearSel.value = y;
   } else {
-    const now = new Date();
-    monthSel.value = String(now.getMonth() + 1).padStart(2, '0');
-    yearSel.value = String(now.getFullYear());
+    monthSel.value = '';
+    yearSel.value = '';
   }
 }
-function readExpenseEndSelectors(){
-  const m = document.getElementById('expense-form-end-month').value;
-  const y = document.getElementById('expense-form-end-year').value;
-  return y + '-' + m;
+function readMonthYearPicker(prefix, which){
+  const m = document.getElementById(prefix + '-form-' + which + '-month').value;
+  const y = document.getElementById(prefix + '-form-' + which + '-year').value;
+  return (m && y) ? (y + '-' + m) : null;
 }
-populateExpenseEndSelectors();
+function resetMonthYearPickers(prefix){
+  setMonthYearPicker(prefix, 'start', currentMonthKey());
+  setMonthYearPicker(prefix, 'end', currentMonthKey());
+}
+PICKER_FIELDS.forEach(([p, w]) => setupMonthYearPicker(p, w));
+resetMonthYearPickers('income');
+resetMonthYearPickers('expense');
 
 /* ============================================================
    CONSULTOR DE GASTOS — toggle campo de prazo
@@ -1503,8 +1597,11 @@ function wireRecurringToggle(prefix){
   const recurringSel = document.getElementById(prefix + '-form-recurring');
   const endWrap = document.getElementById(prefix + '-form-end-wrap');
   recurringSel.addEventListener('change', () => {
-    endWrap.style.display = recurringSel.value === 'false' ? 'block' : 'none';
-    if (prefix === 'expense' && recurringSel.value === 'false') populateExpenseEndSelectors();
+    const hasDeadline = recurringSel.value === 'false';
+    endWrap.style.display = hasDeadline ? 'block' : 'none';
+    if (hasDeadline){
+      setMonthYearPicker(prefix, 'end', readMonthYearPicker(prefix, 'start') || currentMonthKey());
+    }
   });
 }
 wireRecurringToggle('income');
@@ -1520,7 +1617,7 @@ function resetGastosForm(prefix){
   document.getElementById(prefix + '-form-submit').textContent = prefix === 'income' ? 'Adicionar entrada' : 'Adicionar saída';
   document.getElementById(prefix + '-form-cancel').style.display = 'none';
   populateCategorySelect(document.getElementById(prefix + '-form-category'), prefix);
-  if (prefix === 'expense') populateExpenseEndSelectors();
+  resetMonthYearPickers(prefix);
   if (prefix === 'income') editingIncomeId = null; else editingExpenseId = null;
 }
 
@@ -1533,16 +1630,21 @@ function wireGastosForm(prefix){
     const amount = parseFloat(document.getElementById(prefix + '-form-amount').value);
     const day = document.getElementById(prefix + '-form-day').value ? parseInt(document.getElementById(prefix + '-form-day').value, 10) : null;
     const recurring = document.getElementById(prefix + '-form-recurring').value === 'true';
-    const endDate = recurring ? null : (prefix === 'expense' ? readExpenseEndSelectors() : (document.getElementById('income-form-end').value || null));
+    const startDate = readMonthYearPicker(prefix, 'start');
+    const endDate = recurring ? null : readMonthYearPicker(prefix, 'end');
     if (!name || isNaN(amount) || amount < 0 || category === '__new__') return;
+    if (startDate && endDate && endDate < startDate){
+      alert('O último mês não pode ser anterior ao mês de início ("a partir de").');
+      return;
+    }
 
     const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
     const editingId = prefix === 'income' ? editingIncomeId : editingExpenseId;
     if (editingId){
       const entry = list.find(e => e.id === editingId);
-      if (entry){ Object.assign(entry, { name, category, amount, day, recurring, endDate }); }
+      if (entry){ Object.assign(entry, { name, category, amount, day, recurring, startDate, endDate }); }
     } else {
-      list.push({ id: (prefix + '_' + Date.now()), name, category, amount, day, recurring, endDate });
+      list.push({ id: (prefix + '_' + Date.now()), name, category, amount, day, recurring, startDate, endDate });
     }
     saveState();
     resetGastosForm(prefix);
@@ -1564,11 +1666,8 @@ function editGastosEntry(prefix, id){
   document.getElementById(prefix + '-form-day').value = entry.day || '';
   document.getElementById(prefix + '-form-recurring').value = entry.recurring ? 'true' : 'false';
   document.getElementById(prefix + '-form-end-wrap').style.display = entry.recurring ? 'none' : 'block';
-  if (prefix === 'expense'){
-    populateExpenseEndSelectors(entry.endDate);
-  } else {
-    document.getElementById('income-form-end').value = entry.endDate || '';
-  }
+  setMonthYearPicker(prefix, 'start', entry.startDate || null);
+  setMonthYearPicker(prefix, 'end', entry.endDate || currentMonthKey());
   document.getElementById(prefix + '-form-submit').textContent = 'Salvar alterações';
   document.getElementById(prefix + '-form-cancel').style.display = 'inline-block';
   if (prefix === 'income') editingIncomeId = id; else editingExpenseId = id;
@@ -1586,24 +1685,34 @@ function deleteGastosEntry(prefix, id){
 }
 
 /* ============================================================
-   CONSULTOR DE GASTOS — render listas
+   CONSULTOR DE GASTOS — render listas (mês passado | mês corrente)
 ============================================================ */
-function renderGastosList(prefix){
-  const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
-  const tbody = document.getElementById(prefix + '-list');
+function renderGastosListColumn(prefix, slot, monthKey, list){
+  const tbody = document.getElementById(prefix + '-list-' + slot);
+  document.getElementById(prefix + '-' + slot + '-month').textContent = '· ' + monthKeyLabel(monthKey);
+  /* só aparece no mês quem já tinha começado e ainda não expirou */
+  const visible = list.filter(e => isActiveInMonth(e, monthKey));
+  const total = visible.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  document.getElementById(prefix + '-' + slot + '-total').textContent = 'Total: ' + fmtBRL(total);
+
   tbody.innerHTML = '';
-  if (list.length === 0){
-    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-faint); text-align:center; padding:20px;">Nenhum lançamento cadastrado ainda.</td></tr>`;
+  if (visible.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-faint); text-align:center; padding:20px;">Nenhum lançamento neste mês.</td></tr>`;
     return;
   }
-  list.forEach(entry => {
+  visible.forEach(entry => {
     const tr = document.createElement('tr');
-    const recorrenciaHtml = entry.recurring
-      ? `<span class="badge-recorrente">Mensal</span>`
-      : `<span class="badge-prazo">Até ${entry.endDate ? monthKeyLabel(entry.endDate) : '—'}</span>`;
+    let recorrenciaHtml;
+    if (entry.recurring){
+      recorrenciaHtml = `<span class="badge-recorrente">Mensal</span>`;
+    } else {
+      recorrenciaHtml = `<span class="badge-prazo">Até ${entry.endDate ? monthKeyShort(entry.endDate) : '—'}</span>`;
+      if (entry.endDate === monthKey) recorrenciaHtml += `<span class="small-note">último mês</span>`;
+    }
+    if (entry.startDate) recorrenciaHtml += `<span class="small-note">desde ${monthKeyShort(entry.startDate)}</span>`;
     tr.innerHTML = `
-      <td>${entry.name}</td>
-      <td>${entry.category}</td>
+      <td>${escapeHtml(entry.name)}</td>
+      <td>${escapeHtml(entry.category)}</td>
       <td class="tnum">${fmtBRL(Number(entry.amount) || 0)}</td>
       <td>${entry.day ? 'Dia ' + entry.day : '—'}</td>
       <td>${recorrenciaHtml}</td>
@@ -1616,6 +1725,11 @@ function renderGastosList(prefix){
   });
   tbody.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => editGastosEntry(prefix, btn.dataset.edit)));
   tbody.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => deleteGastosEntry(prefix, btn.dataset.delete)));
+}
+function renderGastosList(prefix){
+  const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
+  renderGastosListColumn(prefix, 'prev', previousMonthKey(), list);
+  renderGastosListColumn(prefix, 'curr', currentMonthKey(), list);
 }
 
 /* ============================================================
