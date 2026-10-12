@@ -448,7 +448,8 @@
       <div id="gastos-status-income">Entradas: R$ 0,00</div>
       <div id="gastos-status-expense">Saídas: R$ 0,00</div>
       <div style="margin-top:6px;"><span id="gastos-status-opening">Saldo de abertura: R$ 0,00</span><button type="button" class="hero-link-btn" id="gastos-opening-adjust" title="Corrigir o valor que sobrou dos meses anteriores">ajustar</button></div>
-      <div id="gastos-status-closing" style="font-weight:600;">Saldo acumulado no fim do mês: R$ 0,00</div>
+      <div id="gastos-status-closing" style="font-weight:600;">Resultado do mês: R$ 0,00</div>
+      <div id="gastos-status-note" style="margin-top:6px;font-size:12px;opacity:.9;max-width:320px;"></div>
     </div>
   </div>
 
@@ -469,7 +470,7 @@
   <!-- PROJECTION -->
   <div class="panel">
     <h2 id="projection-title">Projeção dos próximos meses</h2>
-    <p class="panel-sub">Barras: resultado de cada mês isolado (mesmo critério do semáforo). Linha: saldo acumulado no fim de cada mês, já somando a sobra dos meses anteriores.</p>
+    <p class="panel-sub">Barras: resultado de cada mês (entradas − saídas). Linha: saldo consolidado no fim de cada mês, já somando a sobra dos meses anteriores. A cor das barras segue o saldo consolidado (mesmo critério do semáforo).</p>
     <div class="chart-box"><canvas id="projection-chart"></canvas></div>
   </div>
 
@@ -1585,9 +1586,9 @@ function statusColor(status){
   return status === 'green' ? '#00B285' : status === 'yellow' ? '#F2A93B' : '#F0405A';
 }
 function statusVerdictText(status){
-  if (status === 'red') return '🔴 No vermelho — as saídas superam as entradas neste mês.';
-  if (status === 'yellow') return '🟡 Atenção — sobra pouco, risco de faltar dinheiro.';
-  return '🟢 Tranquilo — sobra confortável no mês.';
+  if (status === 'red') return '🔴 No vermelho — o saldo consolidado (sobra anterior + entradas − saídas) está negativo.';
+  if (status === 'yellow') return '🟡 Atenção — o saldo consolidado é baixo, risco de faltar dinheiro.';
+  return '🟢 Tranquilo — saldo consolidado confortável.';
 }
 
 /* ============================================================
@@ -1855,19 +1856,29 @@ function renderGastosStatus(){
   const { incomeTotal, expenseTotal, saldo } = computeMonthTotals(monthKey);
   const opening = openingInfo(monthKey);
   const closing = opening.value + saldo;
-  const status = statusForSaldo(saldo);
+  const status = statusForSaldo(closing); /* diagnóstico sobre o saldo consolidado */
   const hero = document.getElementById('gastos-status-hero');
   hero.classList.remove('status-green', 'status-yellow', 'status-red');
   hero.classList.add('status-' + status);
 
-  document.getElementById('gastos-status-label').textContent = 'Situação em ' + monthKeyLabel(monthKey);
-  document.getElementById('gastos-status-saldo').textContent = (saldo >= 0 ? '' : '-') + fmtBRL(Math.abs(saldo));
+  document.getElementById('gastos-status-label').textContent = 'Situação em ' + monthKeyLabel(monthKey) + ' · saldo consolidado';
+  document.getElementById('gastos-status-saldo').textContent = (closing >= 0 ? '' : '-') + fmtBRL(Math.abs(closing));
   document.getElementById('gastos-status-verdict').textContent = statusVerdictText(status);
   document.getElementById('gastos-status-verdict').className = 'hero-delta';
   document.getElementById('gastos-status-income').textContent = 'Entradas: ' + fmtBRL(incomeTotal);
   document.getElementById('gastos-status-expense').textContent = 'Saídas: ' + fmtBRL(expenseTotal);
   document.getElementById('gastos-status-opening').textContent = 'Saldo de abertura: ' + fmtBRL(opening.value) + (opening.manual ? ' (ajustado)' : '');
-  document.getElementById('gastos-status-closing').textContent = 'Saldo acumulado no fim do mês: ' + fmtBRL(closing);
+  document.getElementById('gastos-status-closing').textContent = 'Resultado do mês (entradas − saídas): ' + (saldo >= 0 ? '' : '-') + fmtBRL(Math.abs(saldo));
+  /* observações úteis */
+  const notes = [];
+  if (saldo < 0 && closing >= 0) notes.push('Este mês gasta mais do que entra, mas a sobra anterior cobre a diferença.');
+  const flow = computeDailyFlow(monthKey);
+  const minBal = flow.balances.length ? Math.min.apply(null, flow.balances) : 0;
+  if (closing >= 0 && minBal < 0){
+    const idx = flow.balances.indexOf(minBal);
+    notes.push('⚠ Atenção: no dia ' + (idx + 1) + ' o saldo chega a ' + fmtBRL(minBal) + ' antes de a próxima entrada cair.');
+  }
+  document.getElementById('gastos-status-note').textContent = notes.join(' ');
 }
 
 /* Ajuste manual do saldo de abertura (o que realmente sobrou dos meses anteriores). */
@@ -1902,9 +1913,10 @@ function renderGastosProjection(){
   const ctx = canvas.getContext('2d');
   const labels = keys.map(monthKeyLabel);
   const saldos = keys.map(k => computeMonthTotals(k).saldo);
-  const colors = saldos.map(s => statusColor(statusForSaldo(s)));
-  /* linha: saldo acumulado no fim de cada mês = abertura do mês + resultado do mês */
+  /* linha: saldo consolidado no fim de cada mês = abertura do mês + resultado do mês */
   const cumulative = keys.map((k, i) => openingInfo(k).value + saldos[i]);
+  /* cores (semáforo) pelo saldo consolidado, não pelo resultado isolado */
+  const colors = cumulative.map(c => statusColor(statusForSaldo(c)));
   const base = chartOptions('currency');
 
   if (gastosProjectionChart) gastosProjectionChart.destroy();
@@ -1913,7 +1925,7 @@ function renderGastosProjection(){
       labels,
       datasets: [
         { type: 'bar', label: 'Resultado do mês', data: saldos, backgroundColor: colors, borderRadius: 6, order: 2 },
-        { type: 'line', label: 'Saldo acumulado', data: cumulative, borderColor: '#1E1B2E', backgroundColor: '#1E1B2E', borderWidth: 2.5, tension: 0.25, pointRadius: 3, fill: false, order: 1 }
+        { type: 'line', label: 'Saldo consolidado', data: cumulative, borderColor: '#1E1B2E', backgroundColor: '#1E1B2E', borderWidth: 2.5, tension: 0.25, pointRadius: 3, fill: false, order: 1 }
       ]
     },
     options: {
@@ -2162,13 +2174,14 @@ function renderGastosTicker(){
   const keys = getMonthKeys(PROJECTION_MONTHS);
   const monthly = keys.map(k => ({ key: k, ...computeMonthTotals(k) }));
 
-  /* alertas de meses com risco (resultado isolado do mês, mesmo critério do semáforo) */
+  /* alertas de meses com risco (saldo consolidado = abertura + resultado do mês, mesmo critério do semáforo) */
   monthly.forEach(m => {
-    const status = statusForSaldo(m.saldo);
+    const consolidated = openingInfo(m.key).value + m.saldo;
+    const status = statusForSaldo(consolidated);
     if (status === 'red'){
-      messages.push('🔴 Cuidado com os gastos em ' + monthKeyLabel(m.key) + ': saldo previsto de ' + fmtBRL(m.saldo) + '.');
+      messages.push('🔴 Cuidado com os gastos em ' + monthKeyLabel(m.key) + ': saldo consolidado previsto de ' + fmtBRL(consolidated) + '.');
     } else if (status === 'yellow'){
-      messages.push('🟡 Fique de olho em ' + monthKeyLabel(m.key) + ': sobra apertada de ' + fmtBRL(m.saldo) + '.');
+      messages.push('🟡 Fique de olho em ' + monthKeyLabel(m.key) + ': saldo consolidado apertado de ' + fmtBRL(consolidated) + '.');
     }
   });
 
