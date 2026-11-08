@@ -155,6 +155,25 @@
   .month-badge.past{ background:#FFF1E3; color: var(--gold); }
   .month-badge.future{ background:#E3F6F0; color: var(--up); }
 
+  /* contas pagas / alertas de vencimento */
+  .bill-banner{ border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; border: 1.5px solid; }
+  .bill-banner.is-overdue{ background:#FFF0F2; border-color: var(--down); }
+  .bill-banner.is-soon{ background:#FFF6EA; border-color: var(--gold); }
+  .bill-banner h3{ margin:0 0 8px; font-size:14.5px; }
+  .bill-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid rgba(0,0,0,.07); font-size:13.5px; flex-wrap:wrap; }
+  .bill-item:first-of-type{ border-top:none; }
+  .bill-item .bill-when{ font-weight:600; }
+  .is-overdue .bill-when{ color: var(--down); } .is-soon .bill-when{ color:#B86B12; }
+  .bill-item button{ border:1.5px solid var(--up); background:#fff; color:var(--up); border-radius:999px; padding:4px 12px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .bill-item button:hover{ background:var(--up); color:#fff; }
+  .tab-badge{ display:inline-block; min-width:18px; padding:1px 6px; margin-left:6px; border-radius:999px; background:var(--down); color:#fff; font-size:11px; font-weight:700; text-align:center; }
+  .paid-btn{ width:26px; height:26px; border-radius:50%; border:2px solid var(--text-faint); background:#fff; color:transparent; font-size:14px; line-height:1; cursor:pointer; padding:0; }
+  .paid-btn:hover{ border-color: var(--up); }
+  tr.row-paid td{ background:#EAF8F3; color:#5E7F74; }
+  tr.row-paid td:nth-child(2){ text-decoration: line-through; }
+  tr.row-paid .paid-btn{ background:var(--up); border-color:var(--up); color:#fff; }
+  .due-tag{ display:block; font-size:11px; font-weight:700; margin-top:3px; }
+  .due-tag.overdue{ color:var(--down); } .due-tag.soon{ color:#B86B12; } .due-tag.paid{ color:var(--up); }
   .hero-link-btn{ background:none; border:none; padding:0; margin-left:6px; color:#fff; font-size:12.5px; font-weight:600; text-decoration:underline; }
   .hero-link-btn:hover{ opacity:.8; }
 
@@ -347,7 +366,7 @@
   <!-- TABS -->
   <div class="tabs" id="main-tabs">
     <button class="tab-btn active" data-tab="investimentos">Investimentos</button>
-    <button class="tab-btn" data-tab="gastos">Consultor de Gastos</button>
+    <button class="tab-btn" data-tab="gastos">Consultor de Gastos<span class="tab-badge" id="tab-bill-badge" style="display:none;"></span></button>
   </div>
 
   <div id="view-investimentos" class="view">
@@ -429,6 +448,8 @@
   <div id="view-gastos" class="view" style="display:none;">
 
   <!-- MONTH NAV -->
+  <div id="bill-banner" style="display:none;" role="alert"></div>
+
   <div class="month-nav" id="gastos-month-nav">
     <button type="button" class="month-nav-btn" id="gastos-month-prev" aria-label="Mês anterior" title="Mês anterior">&larr;</button>
     <select id="gastos-month-select" class="login-input" aria-label="Mês em análise"></select>
@@ -447,6 +468,7 @@
     <div class="hero-meta">
       <div id="gastos-status-income">Entradas: R$ 0,00</div>
       <div id="gastos-status-expense">Saídas: R$ 0,00</div>
+      <div id="gastos-status-paid" style="font-size:12.5px;opacity:.95;">Já pago: R$ 0,00 · A pagar: R$ 0,00</div>
       <div style="margin-top:6px;"><span id="gastos-status-opening">Saldo de abertura: R$ 0,00</span><button type="button" class="hero-link-btn" id="gastos-opening-adjust" title="Corrigir o valor que sobrou dos meses anteriores">ajustar</button></div>
       <div id="gastos-status-closing" style="font-weight:600;">Resultado do mês: R$ 0,00</div>
       <div id="gastos-status-note" style="margin-top:6px;font-size:12px;opacity:.9;max-width:320px;"></div>
@@ -615,7 +637,7 @@
     <div class="table-scroll">
       <table class="data-table gastos-table">
         <thead>
-          <tr><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr>
+          <tr><th title="Marque quando pagar">Pago?</th><th>Nome</th><th>Categoria</th><th>Valor</th><th>Dia</th><th>Recorrência</th><th></th></tr>
         </thead>
         <tbody id="expense-list"></tbody>
       </table>
@@ -824,7 +846,9 @@ function emptyGastos(){
     incomes: [],
     expenses: [],
     firstMonth: GASTOS_DEFAULT_FIRST_MONTH,
-    openingAdjustments: {}
+    openingAdjustments: {},
+    paid: {},
+    paidSince: currentMonthKey()
   };
 }
 function ensureGastosShape(s){
@@ -836,6 +860,10 @@ function ensureGastosShape(s){
   if (!Array.isArray(s.gastos.expenses)) s.gastos.expenses = [];
   if (!/^\d{4}-\d{2}$/.test(String(s.gastos.firstMonth || ''))) s.gastos.firstMonth = GASTOS_DEFAULT_FIRST_MONTH;
   if (!s.gastos.openingAdjustments || typeof s.gastos.openingAdjustments !== 'object' || Array.isArray(s.gastos.openingAdjustments)) s.gastos.openingAdjustments = {};
+  /* contas pagas: { 'AAAA-MM': { idDaSaida: 'AAAA-MM-DD (dia em que foi marcada)' } } */
+  if (!s.gastos.paid || typeof s.gastos.paid !== 'object' || Array.isArray(s.gastos.paid)) s.gastos.paid = {};
+  /* só cobra pagamento de meses a partir daqui (evita acusar como "não pagas" as contas de antes deste recurso existir) */
+  if (!/^\d{4}-\d{2}$/.test(String(s.gastos.paidSince || ''))) s.gastos.paidSince = currentMonthKey();
   return s;
 }
 function loadState(){
@@ -872,6 +900,10 @@ function validateImportedData(parsed){
     if (parsed.gastos.expenses !== undefined && !Array.isArray(parsed.gastos.expenses)) return false;
     const adj = parsed.gastos.openingAdjustments;
     if (adj !== undefined && (typeof adj !== 'object' || adj === null || Array.isArray(adj))) return false;
+    const pd = parsed.gastos.paid;
+    if (pd !== undefined && (typeof pd !== 'object' || pd === null || Array.isArray(pd))) return false;
+    const ps = parsed.gastos.paidSince;
+    if (ps !== undefined && !/^\d{4}-\d{2}$/.test(String(ps))) return false;
     const fm = parsed.gastos.firstMonth;
     if (fm !== undefined && !/^\d{4}-\d{2}$/.test(String(fm))) return false;
   }
@@ -1753,8 +1785,83 @@ function deleteGastosEntry(prefix, id){
   if (!entry || !confirm('Remover "' + entry.name + '"? Ele será removido de todos os meses.')) return;
   const idx = list.indexOf(entry);
   list.splice(idx, 1);
+  Object.keys(state.gastos.paid || {}).forEach(k => { if (state.gastos.paid[k]) delete state.gastos.paid[k][id]; });
   saveState();
   renderGastos();
+}
+
+/* ============================================================
+   CONSULTOR DE GASTOS — contas pagas e lembretes
+============================================================ */
+const BILL_ALERT_DAYS = 3;
+function todayMidnight(){ const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function todayISO(){ const d = todayMidnight(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function isPaid(monthKey, id){ return !!(state.gastos.paid && state.gastos.paid[monthKey] && state.gastos.paid[monthKey][id]); }
+function togglePaid(monthKey, id){
+  const paid = state.gastos.paid || (state.gastos.paid = {});
+  if (!paid[monthKey]) paid[monthKey] = {};
+  if (paid[monthKey][id]) delete paid[monthKey][id]; else paid[monthKey][id] = todayISO();
+  if (Object.keys(paid[monthKey]).length === 0) delete paid[monthKey];
+  saveState();
+  renderGastos();
+}
+/* dias até o vencimento (negativo = vencida). null se a saída não tem dia informado. */
+function daysUntilDue(entry, monthKey){
+  if (!entry.day) return null;
+  const [y, m] = monthKey.split('-').map(Number);
+  const due = new Date(y, m - 1, entryDayInMonth(entry, monthKey));
+  return Math.round((due - todayMidnight()) / 86400000);
+}
+function dueText(days){
+  if (days < -1) return 'vencida há ' + (-days) + ' dias';
+  if (days === -1) return 'venceu ontem';
+  if (days === 0) return 'vence hoje';
+  if (days === 1) return 'vence amanhã';
+  return 'vence em ' + days + ' dias';
+}
+function dueDateLabel(entry, monthKey){
+  const [y, m] = monthKey.split('-');
+  return String(entryDayInMonth(entry, monthKey)).padStart(2, '0') + '/' + m;
+}
+/* contas não pagas vencidas ou vencendo nos próximos BILL_ALERT_DAYS dias */
+function computeBillAlerts(){
+  const out = [];
+  const start = state.gastos.paidSince > getFirstMonth() ? state.gastos.paidSince : getFirstMonth();
+  const end = monthKeyAdd(currentMonthKey(), 1);
+  for (let k = start; k <= end; k = monthKeyAdd(k, 1)){
+    state.gastos.expenses.forEach(e => {
+      if (!isActiveInMonth(e, k) || isPaid(k, e.id)) return;
+      const days = daysUntilDue(e, k);
+      if (days === null || days > BILL_ALERT_DAYS) return;
+      out.push({ entry: e, monthKey: k, days });
+    });
+  }
+  out.sort((a, b) => a.days - b.days);
+  return out;
+}
+function renderBillAlerts(){
+  const alerts = computeBillAlerts();
+  const banner = document.getElementById('bill-banner');
+  const badge = document.getElementById('tab-bill-badge');
+  if (alerts.length === 0){
+    banner.style.display = 'none'; banner.innerHTML = '';
+    badge.style.display = 'none';
+    return;
+  }
+  const overdue = alerts.filter(a => a.days < 0).length;
+  banner.className = 'bill-banner ' + (overdue ? 'is-overdue' : 'is-soon');
+  banner.style.display = 'block';
+  const title = overdue
+    ? '🔴 ' + overdue + (overdue === 1 ? ' conta vencida sem pagamento registrado' : ' contas vencidas sem pagamento registrado') + (alerts.length > overdue ? ' · ' + (alerts.length - overdue) + ' a vencer em breve' : '')
+    : '🟡 ' + alerts.length + (alerts.length === 1 ? ' conta vence' : ' contas vencem') + ' nos próximos ' + BILL_ALERT_DAYS + ' dias';
+  const shown = alerts.slice(0, 6);
+  banner.innerHTML = `<h3>${title}</h3>` + shown.map(a => `
+    <div class="bill-item">
+      <span>${escapeHtml(a.entry.name)} — ${fmtBRL(Number(a.entry.amount) || 0)} · <span class="bill-when">${dueText(a.days)} (${dueDateLabel(a.entry, a.monthKey)})</span></span>
+      <button type="button" data-bill-paid="${escapeHtml(a.entry.id)}" data-bill-month="${a.monthKey}">Marcar como paga ✓</button>
+    </div>`).join('') + (alerts.length > shown.length ? `<div class="small-note">+ ${alerts.length - shown.length} outras</div>` : '');
+  banner.querySelectorAll('[data-bill-paid]').forEach(b => b.addEventListener('click', () => togglePaid(b.dataset.billMonth, b.dataset.billPaid)));
+  badge.textContent = alerts.length; badge.style.display = 'inline-block';
 }
 
 /* ============================================================
@@ -1764,7 +1871,10 @@ function renderGastosList(prefix){
   const list = prefix === 'income' ? state.gastos.incomes : state.gastos.expenses;
   const monthKey = gastosMonthKey;
   const tbody = document.getElementById(prefix + '-list');
-  const visible = list.filter(e => isActiveInMonth(e, monthKey));
+  /* ordena pelo dia do mês (1 → 31); itens sem dia vão para o fim; empate = ordem alfabética */
+  const dayKey = e => { const d = parseInt(e.day, 10); return isNaN(d) ? 999 : entryDayInMonth(e, monthKey); };
+  const visible = list.filter(e => isActiveInMonth(e, monthKey))
+    .sort((x, y) => dayKey(x) - dayKey(y) || String(x.name).localeCompare(String(y.name), 'pt-BR'));
   const total = visible.reduce((s, e) => s + (Number(e.amount) || 0), 0);
   document.getElementById(prefix + '-list-month').textContent = monthKeyLabel(monthKey);
   document.getElementById(prefix + '-list-total').textContent = 'Total: ' + fmtBRL(total);
@@ -1772,7 +1882,7 @@ function renderGastosList(prefix){
   tbody.innerHTML = '';
   if (visible.length === 0){
     const msg = list.length === 0 ? 'Nenhum lançamento cadastrado ainda.' : 'Nenhum lançamento ativo neste mês.';
-    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-faint); text-align:center; padding:20px;">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${prefix === 'expense' ? 7 : 6}" style="color:var(--text-faint); text-align:center; padding:20px;">${msg}</td></tr>`;
     return;
   }
   visible.forEach(entry => {
@@ -1785,7 +1895,23 @@ function renderGastosList(prefix){
       if (entry.endDate === monthKey) recorrenciaHtml += `<span class="small-note">último mês</span>`;
     }
     if (entry.startDate) recorrenciaHtml += `<span class="small-note">desde ${monthKeyShort(entry.startDate)}</span>`;
-    tr.innerHTML = `
+    let paidCell = '';
+    if (prefix === 'expense'){
+      const paid = isPaid(monthKey, entry.id);
+      const days = daysUntilDue(entry, monthKey);
+      let tag = '';
+      if (paid){
+        const when = state.gastos.paid[monthKey][entry.id];
+        tag = `<span class="due-tag paid">paga${/^\d{4}-\d{2}-\d{2}$/.test(when) ? ' em ' + when.slice(8) + '/' + when.slice(5, 7) : ''}</span>`;
+        tr.classList.add('row-paid');
+      } else if (days !== null && days < 0 && monthKey >= state.gastos.paidSince){
+        tag = `<span class="due-tag overdue">${dueText(days)}</span>`;
+      } else if (days !== null && days >= 0 && days <= BILL_ALERT_DAYS){
+        tag = `<span class="due-tag soon">${dueText(days)}</span>`;
+      }
+      paidCell = `<td><button type="button" class="paid-btn" data-paid="${escapeHtml(entry.id)}" aria-pressed="${paid}" aria-label="${paid ? 'Desmarcar' : 'Marcar'} ${escapeHtml(entry.name)} como paga" title="${paid ? 'Paga — clique para desmarcar' : 'Marcar como paga'}">✓</button>${tag}</td>`;
+    }
+    tr.innerHTML = paidCell + `
       <td>${escapeHtml(entry.name)}</td>
       <td>${escapeHtml(entry.category)}</td>
       <td class="tnum">${fmtBRL(Number(entry.amount) || 0)}</td>
@@ -1800,6 +1926,7 @@ function renderGastosList(prefix){
   });
   tbody.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => editGastosEntry(prefix, btn.dataset.edit)));
   tbody.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => deleteGastosEntry(prefix, btn.dataset.delete)));
+  tbody.querySelectorAll('[data-paid]').forEach(btn => btn.addEventListener('click', () => togglePaid(monthKey, btn.dataset.paid)));
 }
 
 /* ============================================================
@@ -1867,6 +1994,9 @@ function renderGastosStatus(){
   document.getElementById('gastos-status-verdict').className = 'hero-delta';
   document.getElementById('gastos-status-income').textContent = 'Entradas: ' + fmtBRL(incomeTotal);
   document.getElementById('gastos-status-expense').textContent = 'Saídas: ' + fmtBRL(expenseTotal);
+  const activeExp = state.gastos.expenses.filter(e => isActiveInMonth(e, monthKey));
+  const paidTotal = activeExp.filter(e => isPaid(monthKey, e.id)).reduce((t, e) => t + (Number(e.amount) || 0), 0);
+  document.getElementById('gastos-status-paid').textContent = 'Já pago: ' + fmtBRL(paidTotal) + ' · A pagar: ' + fmtBRL(expenseTotal - paidTotal);
   document.getElementById('gastos-status-opening').textContent = 'Saldo de abertura: ' + fmtBRL(opening.value) + (opening.manual ? ' (ajustado)' : '');
   document.getElementById('gastos-status-closing').textContent = 'Resultado do mês (entradas − saídas): ' + (saldo >= 0 ? '' : '-') + fmtBRL(Math.abs(saldo));
   /* observações úteis */
@@ -2214,6 +2344,7 @@ function renderGastosTicker(){
 ============================================================ */
 function renderGastos(){
   gastosMonthKey = clampGastosMonth(gastosMonthKey);
+  renderBillAlerts();
   renderMonthNav();
   renderGastosStatus();
   renderGastosTicker();
